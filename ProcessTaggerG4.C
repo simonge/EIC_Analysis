@@ -31,51 +31,74 @@ R__LOAD_LIBRARY(libfmt.so)
 #include "dd4pod/Geant4ParticleCollection.h"
 #include "dd4pod/TrackerHitCollection.h"
 #include "dd4pod/CalorimeterHitCollection.h"
-
+ 
 #include "edm4hep/MCParticleCollection.h"
 #include "edm4hep/SimTrackerHitCollection.h"
 #include "edm4hep/SimCalorimeterHitCollection.h"
+  
+//-----------------------------------------------------------------------------------------
+  struct getSubID{
+    getSubID(std::string cname, dd4hep::Detector& det) : componentName(cname), detector(det){}
+    
+    ROOT::VecOps::RVec<int> operator()(const std::vector<edm4hep::SimTrackerHitData>& evt) {
+      auto decoder = detector.readout(readoutName).idSpec().decoder();
+      auto indexID = decoder->index(componentName);
+      ROOT::VecOps::RVec<int> result;
+      for(const auto& h: evt) {
+	result.push_back(decoder->get(h.cellID,indexID));      
+      }
+      return result;    
+    };
+    
+    void SetComponent(std::string cname){
+      componentName = cname;
+    }
+    void SetReadout(std::string rname){
+      readoutName = rname;
+    }
 
+    private: 
+    std::string componentName;
+    dd4hep::Detector& detector;
+    std::string readoutName = "TaggerTrackerHits";
+  };
 
-//--------------------------------------------------------------------------------------------
-
-  void MakeVariablesStations(const char* fname = "/scratch/EIC/G4out/CentralTagFrontWindow/qr_18x275_beam_out_0.root"){
-  //  void MakeVariablesFPUpdate(const char* fname = "/scratch/EIC/G4out/FP_Tagger_Test.root"){
-  //  void MakeVariablesFP(const char* fname = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.root"){
-//   void MakeVariablesNew(const char* fname = "/scratch/EIC/G4out/qr_18x275_out_more.root"){
+  void ProcessTaggerG4(TString inName      = "/scratch/EIC/G4out/TwoTagFrontWindow/qr_18x275_beam_out_0.root",
+		       TString outName     = "/scratch/EIC/Analysis/temp.root",
+		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
   
   ROOT::EnableImplicitMT();
-  TString outname = "/scratch/EIC/Analysis/CentralTagFrontWindow_events.root";
-  //  TString outname = "/scratch/EIC/Analysis/qr_out18x275_events.root";
 
   using namespace ROOT::Math;
   using namespace std;
 
-  //Chain
+  // Input Data Chain
   TChain* t = new TChain("events");
-  t->Add(fname);
+  t->Add(inName);
 
   ROOT::RDataFrame d0(*t, {"TaggerTrackerHits", "MCParticles"});
-  //d0.Range(0,10000);
+  //d0.Range(0,10000); // Limit events to analyse 
 
   // -------------------------
   // Get the DD4hep instance
   // Load the compact XML file
   // Initialize the position converter tool
   dd4hep::Detector& detector = dd4hep::Detector::getInstance();
-  detector.fromCompact("/home/simon/geant4/eic/ip6/eic_ip6.xml");
+  detector.fromCompact(compactName);
   dd4hep::rec::CellIDPositionConverter cellid_converter(detector);
   // -------------------------
 
 
   // -------------------------
   //How to identify the detector and layer from the cellID
-  auto decoder = detector.readout("TaggerTrackerHits").idSpec().decoder();
-  fmt::print("{}\n", decoder->fieldDescription());
-  auto x_index         = decoder->index("x");
-  auto y_index         = decoder->index("y");
-  auto layer_index     = decoder->index("layer");
-  auto detector_index  = decoder->index("system");
+  
+
+//   auto decoder = detector.readout("TaggerTrackerHits").idSpec().decoder();
+//   fmt::print("{}\n", decoder->fieldDescription());
+//   auto x_index         = decoder->index("x");
+//   auto y_index         = decoder->index("y");
+//   auto layer_index     = decoder->index("layer");
+//   auto detector_index  = decoder->index("system");
   // -------------------------
 
 
@@ -88,58 +111,7 @@ R__LOAD_LIBRARY(libfmt.so)
   auto nhits  = [](const std::vector<edm4hep::SimTrackerHitData>& evt)     { return (int)evt.size(); };
   auto nhits2 = [](const std::vector<edm4hep::MCParticleData>& evt) { return (int)evt.size(); }; 
   
-  // -------------------------
-  // ID of detector hit
-  // -------------------------
-  auto detectorID = [&](const std::vector<edm4hep::SimTrackerHitData>& evt) {         
-    ROOT::VecOps::RVec<int> result;    
-    for(const auto& h: evt) {       
-      result.push_back(decoder->get(h.cellID,detector_index));            
-    }     
-    return result;     
-  };
-
-  // -------------------------
-  // ID of calorimeter detector hit
-  // -------------------------
-  auto detectorIDC = [&](const std::vector<dd4pod::CalorimeterHitData>& evt) {         
-    ROOT::VecOps::RVec<int> result;    
-    for(const auto& h: evt) result.push_back(decoder->get(h.cellID,detector_index));            
-    return result;     
-  };
-
-  // -------------------------
-  // ID of layer hit
-  // -------------------------
-  auto layer = [&](const std::vector<edm4hep::SimTrackerHitData>& evt) {        
-    ROOT::VecOps::RVec<int> result;    
-    for(const auto& h: evt) {      
-      result.push_back(decoder->get(h.cellID,layer_index));
-    }     
-    return result;    
-  };
-
-  // -------------------------
-  // X-Pixel Hit
-  // -------------------------
-  auto xpix = [&](const std::vector<edm4hep::SimTrackerHitData>& evt) {         
-    ROOT::VecOps::RVec<int> result;     
-    for(const auto& h: evt) {       
-      result.push_back(decoder->get(h.cellID,x_index));                    
-    }     
-    return result;     
-  };
-
-  // -------------------------  
-  // Y-Pixel Hit
-  // -------------------------
-  auto ypix = [&](const std::vector<edm4hep::SimTrackerHitData>& evt) {    
-    ROOT::VecOps::RVec<int> result;
-    for(const auto& h: evt) {
-      result.push_back(decoder->get(h.cellID,y_index));      
-    }
-    return result;    
-  };
+ 
 
   // -------------------------
   // Electron Vector 
@@ -327,40 +299,29 @@ R__LOAD_LIBRARY(libfmt.so)
 //    };
 
 
+  getSubID selID("x",detector);
+  auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
+  std::vector<std::string> IDvec;
+
+
 //       //Do some calculations
 //  auto d1 = d0.Define("Hit Filter",[](auto conts){
    auto d1 = d0.Define("nhitsT1", nhits, {"TaggerTrackerHits"})
-     //     .Define("nhitsT2", nhits, {"Tag_2_Track"})
-//      .Filter("nhits>3")
-//                 //.Filter([=](const std::vector<edm4hep::SimTrackerHitData>& hits) {
-//                 //      for (auto h : hits) {
-//                 //        auto pos = ROOT::Math::XYZVector(h.position.x,h.position.y,h.position.z);
-//                 //        if ((pos.r() > 100.0) && (std::abs(pos.phi()-M_PI/2.0)< M_PI/6)) {
-//                 //          return true;
-//                 //        }
-//                 //      }
-//                 //      return false;
-//                 //    },
-//                 //    {"GEMTrackerHits"})
      .Define("real_position_x",   "TaggerTrackerHits.position.x")
      .Define("real_position_y",   "TaggerTrackerHits.position.y")
      .Define("real_position_z",   "TaggerTrackerHits.position.z")
-    //     .Define("real_position",   project_position,      {"TaggerTrackerHits"})
-     //     .Define("TaggerTrackerHits_Prime",  "TaggerTrackerHits[TaggerTrackerHits.PDG==11 && TaggerTrackerHits.generatorStatus==3]")
      .Define("real_vector",     real_vector,           {"TaggerTrackerHits"})
      .Define("recon_position",  recon_position,        {"TaggerTrackerHits"})
      .Define("recon_vector",    recon_vector,          {"recon_position"})
-     .Define("recon_projection",recon_projection,      {"recon_position","recon_vector"})
-//      .Define("real_vector",     "Tag_1_Track.momentum.scale(1/Tag_1_Track.momentum.mag())")
-     //     .Define("fit_position",    fit_position,      {"Tag_1_Track"})
-     .Define("detectorTag",  detectorID, {"TaggerTrackerHits"})
-     .Define("layerTag",     layer,      {"TaggerTrackerHits"})
-     .Define("XpixTag",      xpix,       {"TaggerTrackerHits"})
-     .Define("YpixTag",      ypix,       {"TaggerTrackerHits"})
-    //      .Define("layerTag2",   layer,      {"Tag_2_Track"})
-//      .Define("XpixTag2",    xpix,       {"Tag_2_Track"})
-//      .Define("YpixTag2",    ypix,       {"Tag_2_Track"})
-     .Define("nhits2", nhits2,      {"MCParticles"})
+     .Define("recon_projection",recon_projection,      {"recon_position","recon_vector"});
+
+   for(auto id: ids){
+     std::string colName = id.first+"ID";
+     IDvec.push_back(colName);
+     d1 = d1.Define(colName,getSubID(id.first,detector),{"TaggerTrackerHits"});
+   }
+   
+     d1 = d1.Define("nhits2", nhits2,      {"MCParticles"})
      .Define("vertex", beamVertex , {"MCParticles"})
      .Define("beamE",  beamVector , {"MCParticles"})
      .Define("scatteredE", electronVector , {"MCParticles"})
@@ -384,35 +345,35 @@ R__LOAD_LIBRARY(libfmt.so)
      .Define("Q2", "-scatteredV.M2()")
      .Define("logQ2", "log10(Q2)")
 
-     .Define("AnglePix11","atan(TaggerTrackerHits.momentum.x/TaggerTrackerHits.momentum.z)[layerTag==0]")
-     .Define("AnglePix12","atan(TaggerTrackerHits.momentum.x/TaggerTrackerHits.momentum.z)[layerTag==1]")
+     .Define("AnglePix11","atan(TaggerTrackerHits.momentum.x/TaggerTrackerHits.momentum.z)[layerID==0]")
+     .Define("AnglePix12","atan(TaggerTrackerHits.momentum.x/TaggerTrackerHits.momentum.z)[layerID==1]")
    //   .Define("AnglePix21","atan(Tag_2_Track.momentum.x/Tag_2_Track.momentum.z)[layerTag2==0]")
 //      .Define("AnglePix22","atan(Tag_2_Track.momentum.x/Tag_2_Track.momentum.z)[layerTag2==1]")
 
-     .Define("Xpix11","XpixTag[layerTag==0&&detectorTag==195]")
-     .Define("Ypix11","YpixTag[layerTag==0&&detectorTag==195]")
-     .Define("Npix11","Xpix11.size()")
-     .Define("Xpix12","XpixTag[layerTag==1&&detectorTag==195]")
-     .Define("Ypix12","YpixTag[layerTag==1&&detectorTag==195]")
-     .Define("Npix12","Xpix12.size()")
-     .Define("Xpix13","XpixTag[layerTag==2&&detectorTag==195]")
-     .Define("Ypix13","YpixTag[layerTag==2&&detectorTag==195]")
-    .Define("Npix13","Xpix13.size()");
+     .Define("x11","xID[layerID==0&&systemID==195]")
+     .Define("y11","yID[layerID==0&&systemID==195]")
+     .Define("Npix11","x11.size()")
+     .Define("x12","xID[layerID==1&&systemID==195]")
+     .Define("y12","yID[layerID==1&&systemID==195]")
+     .Define("Npix12","x12.size()")
+     .Define("x13","xID[layerID==2&&systemID==195]")
+     .Define("y13","yID[layerID==2&&systemID==195]")
+    .Define("Npix13","x13.size()");
 
 
-
+   d1.Snapshot("test",outName,IDvec);
 
 
   
-   ROOT::RDF::RSnapshotOptions opts;
-   opts.fMode = "UPDATE";
+//    ROOT::RDF::RSnapshotOptions opts;
+//    opts.fMode = "UPDATE";
 
-   auto d2 = d1.Filter("(Npix11!=0 && Npix12!=0)");// && Npix13!=0)");
-   d1.Snapshot("input",outname,{"nhitsT1","nhits2","vertex","Q2","logQ2","ex","ey","ez","eTheta","ePhi","eE","qx","qy","qz","qTheta","qPhi","qE","pseudorapidity"});
-   //d2.Snapshot("detector1",outname,{"Xpix11","Ypix11","Npix11","Xpix12","Ypix12","Npix12","Xpix13","Ypix13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity"},opts);
-   //   d1.Filter("B2BPass!=0")
-   //  .Snapshot("detectors",outname,{"nhitsT1","layerTag","vertex","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","real_position_x","real_position_y","real_position_z","real_vector"},opts);
-   d2.Snapshot("detector1",outname,{"vertex","Xpix11","Ypix11","Npix11","Xpix12","Ypix12","Npix12","Xpix13","Ypix13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","real_position_x","real_position_y","real_position_z","real_vector"},opts);
+//    auto d2 = d1.Filter("(Npix11!=0 && Npix12!=0)");// && Npix13!=0)");
+//    d1.Snapshot("input",outName,{"nhitsT1","nhits2","vertex","Q2","logQ2","ex","ey","ez","eTheta","ePhi","eE","qx","qy","qz","qTheta","qPhi","qE","pseudorapidity"});
+//    //d2.Snapshot("detector1",outname,{"x11","y11","Npix11","x12","y12","Npix12","x13","y13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity"},opts);
+//    //   d1.Filter("B2BPass!=0")
+//    //  .Snapshot("detectors",outname,{"nhitsT1","layerID","vertex","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","real_position_x","real_position_y","real_position_z","real_vector"},opts);
+//    d2.Snapshot("detector1",outName,{"vertex","x11","y11","Npix11","x12","y12","Npix12","x13","y13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","real_position_x","real_position_y","real_position_z","real_vector"},opts);
 
 
 }
