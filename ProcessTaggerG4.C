@@ -37,8 +37,10 @@ R__LOAD_LIBRARY(libfmt.so)
 #include "edm4hep/SimCalorimeterHitCollection.h"
   
 //-----------------------------------------------------------------------------------------
+// Grab Component functor
+//-----------------------------------------------------------------------------------------
   struct getSubID{
-    getSubID(std::string cname, dd4hep::Detector& det) : componentName(cname), detector(det){}
+    getSubID(std::string cname, dd4hep::Detector& det, std::string rname = "TaggerTrackerHits") : componentName(cname), detector(det), readoutName(rname){}
     
     ROOT::VecOps::RVec<int> operator()(const std::vector<edm4hep::SimTrackerHitData>& evt) {
       auto decoder = detector.readout(readoutName).idSpec().decoder();
@@ -60,11 +62,52 @@ R__LOAD_LIBRARY(libfmt.so)
     private: 
     std::string componentName;
     dd4hep::Detector& detector;
-    std::string readoutName = "TaggerTrackerHits";
+    std::string readoutName;
   };
 
-  void ProcessTaggerG4(TString inName      = "/scratch/EIC/G4out/TwoTagFrontWindow/qr_18x275_beam_out_0.root",
-		       TString outName     = "/scratch/EIC/Analysis/temp.root",
+//-----------------------------------------------------------------------------------------
+// Grab Particle functor
+//-----------------------------------------------------------------------------------------
+struct getParticle{
+  getParticle(int genStat, int pdg) : generatorStatus(genStat), PDG(pdg){}
+  
+  ROOT::Math::PxPyPzMVector operator()(const std::vector<edm4hep::MCParticleData>& evt) {
+    for(const auto& h: evt) {
+      if(h.PDG!=PDG || h.generatorStatus!=generatorStatus) continue;
+      return ROOT::Math::PxPyPzMVector(h.momentum.x,h.momentum.y,h.momentum.z,h.mass);      
+    }
+    return ROOT::Math::PxPyPzMVector();
+  };
+  
+  void SetGeneratorStatus(int genStat){
+    generatorStatus = genStat;
+  }
+  void SetPDG(int pdg){
+    PDG = pdg;
+  }
+  
+private: 
+  int generatorStatus;
+  int PDG;
+};
+
+// Particle definitions and frame names.
+struct partDetails{
+  std::string fName;
+  int pdg;
+  int genStatus;
+};
+
+int beamID = 3;
+int simID  = 1;
+
+std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,beamID},{"scatteredElectron",11,simID}};
+
+//-----------------------------------------------------------------------------------------
+// Main Analysis Call
+//-----------------------------------------------------------------------------------------
+  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
+		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
   
   ROOT::EnableImplicitMT();
@@ -77,7 +120,7 @@ R__LOAD_LIBRARY(libfmt.so)
   t->Add(inName);
 
   ROOT::RDataFrame d0(*t, {"TaggerTrackerHits", "MCParticles"});
-  //d0.Range(0,10000); // Limit events to analyse 
+  //  d0.Range(0,1000); // Limit events to analyse 
 
   // -------------------------
   // Get the DD4hep instance
@@ -88,141 +131,24 @@ R__LOAD_LIBRARY(libfmt.so)
   dd4hep::rec::CellIDPositionConverter cellid_converter(detector);
   // -------------------------
 
-
-  // -------------------------
-  //How to identify the detector and layer from the cellID
-  
-
-//   auto decoder = detector.readout("TaggerTrackerHits").idSpec().decoder();
-//   fmt::print("{}\n", decoder->fieldDescription());
-//   auto x_index         = decoder->index("x");
-//   auto y_index         = decoder->index("y");
-//   auto layer_index     = decoder->index("layer");
-//   auto detector_index  = decoder->index("system");
-  // -------------------------
-
-
   //--------------------------------------------------------------------------------------------
   //Lambda Functions
   //--------------------------------------------------------------------------------------------
   
-  // Simple lambda to define nhits branch
-  // -------------------------
-  auto nhits  = [](const std::vector<edm4hep::SimTrackerHitData>& evt)     { return (int)evt.size(); };
-  auto nhits2 = [](const std::vector<edm4hep::MCParticleData>& evt) { return (int)evt.size(); }; 
-  
- 
-
-  // -------------------------
-  // Electron Vector 
-  // -------------------------
-  auto electronVector = [&](const std::vector<edm4hep::MCParticleData>& evt) {    
-    double px=0;
-    double py=0;
-    double pz=0;
-    double mass=0;
-
-    for (const auto& h : evt) {
-      // The actual hit position:
-      //if(h.ID!=7) continue; //Derek
-      if(h.PDG!=11) continue;
-      if(h.generatorStatus!=1) continue;
-      
-      px   = h.momentum.x;
-      py   = h.momentum.y;
-      pz   = h.momentum.z;
-      mass = h.mass;
-
-      //cout << px << " " <<py << " " <<pz << " " << mass << endl;
-
-      break;
-    }
-
-    PxPyPzMVector result(px,py,pz,mass);
-    return result;
-  };
-
   // -------------------------
   // Beam Vector 
   // -------------------------
   auto beamVertex = [&](const std::vector<edm4hep::MCParticleData>& evt) {    
-    double x=0;
-    double y=0;
-    double z=0;
 
     for (const auto& h : evt) {
       // The actual hit position:
-      //if(h.ID!=7) continue; //Derek
-      
-      x   = h.vertex.x;
-      y   = h.vertex.y;
-      z   = h.vertex.z;
-      
-      
+      if(h.generatorStatus!=simID) continue;
+      return Cartesian3D(h.vertex.x,h.vertex.y,h.vertex.z);
       break;
     }
-
-    Cartesian3D result(x,y,z);
-    return result;
+    return Cartesian3D();
   };
 
-  // -------------------------
-  // Beam Vector 
-  // -------------------------
-  auto beamVector = [&](const std::vector<edm4hep::MCParticleData>& evt) {    
-    double px=0;
-    double py=0;
-    double pz=0;
-    double mass=0;
-
-    Double_t eMass = 0.000511;
-    for (const auto& h : evt) {
-      // The actual hit position:
-      //if(h.ID!=7) continue; //Derek
-      if(h.PDG!=11) continue;
-      if(h.generatorStatus!=3) continue;
-   
-      px   = h.momentum.x;
-      py   = h.momentum.y;
-      pz   = h.momentum.z;
-      mass = h.mass;
-
-      //cout << px << " " <<py << " " <<pz << endl;
-
-      break;
-    }
-
-    PxPyPzMVector result(px,py,pz,mass);
-    return result;
-  };
-
-  // -------------------------
-  // Calculate Q^2 
-  // -------------------------
-  auto scatterVector = [&](const PxPyPzMVector vec) {    
-    Double_t eMass = 0.000511;
-    //Double_t beamE = 10;
-    Double_t beamE = 18;
-    PxPyPzEVector beamVec(0,0,-sqrt(eMass*eMass+beamE*beamE),beamE);
-    auto tVec = beamVec - vec;  
-    return tVec;
-  };
-
-  // -------------------------
-  // Project Real Hit Position 
-  // -------------------------
-  // auto project_position = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
-//     dd4pod::VectorXYZ result;
-//     for (const auto& h : hits) {
-//       // The actual hit position:
-//       auto pos0 = (h.position);
-//       auto vec0 = h.momentum.scale(1/h.momentum.mag());
-//       auto pos1 = pos0.subtract(vec0.scale((pos0.z+14865)/vec0.z));// cellid_converter.position(h.cellID);
-//       result = pos1;
-//       break;
-//     }
-//     return result;
-//   };
 
   // -------------------------
   // Real Hit Vector 
@@ -237,118 +163,40 @@ R__LOAD_LIBRARY(libfmt.so)
     return TVector3();
   };
 
-
-  // -------------------------
-  // Recon Hit Position 
-  // -------------------------
-  auto recon_position = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
-    std::vector<dd4pod::VectorXYZ> result;
-    for (const auto& h : hits) {
-      auto pos1 = cellid_converter.position(h.cellID);
-      //cout << pos1 << endl;
-      result.push_back(dd4pod::VectorXYZ(pos1.x(),pos1.y(),pos1.z()));
-    }
-    return result;
-  };
-
-
-  // -------------------------
-  // Recon Hit Vector 
-  // -------------------------
-  auto recon_vector = [&](const std::vector<dd4pod::VectorXYZ>& hits) {
-    dd4pod::VectorXYZ result;
-    int i=0;
-    for (const auto& h : hits) {
-      i++;
-      if(i==1) result = h;
-      if(i>=1){
-	result = result.subtract(h);
-	break;
-      }
-    }
-    result = result.scale(1/result.mag());
-    //cout << result << endl;
-    return result;
-  };
-
-  // -------------------------
-  // Recon Hit Position 
-  // -------------------------
-  auto recon_projection = [&](const std::vector<dd4pod::VectorXYZ>& hit, const dd4pod::VectorXYZ vector ) {
-    dd4pod::VectorXYZ result;
-    for (const auto& h : hit) {
-      result = h.subtract(vector.scale((h.z+14865)/vector.z));// cellid_converter.position(h.cellID);
-      break;
-    }
-    return result;
-  };
-
-
-//    auto Segmentation = [&](const std::vector<dd4pod::CalorimeterHitData>& evt ) {    
-   
-//      std::vector<int> result;
-     
-//      for(const auto& h: evt) {
-       
-//        int detector = decoder->get(h.cellID,index);
-       
-//        result.push_back(detector);
-       
-//      }
-//      return result;
-//    };
-
-
-  getSubID selID("x",detector);
   auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
-  std::vector<std::string> IDvec;
+  std::vector<std::string> ID_Vec;
+  std::vector<std::string> Part_Vec;
 
 
 //       //Do some calculations
 //  auto d1 = d0.Define("Hit Filter",[](auto conts){
-   auto d1 = d0.Define("nhitsT1", nhits, {"TaggerTrackerHits"})
+   auto d1 = d0.Define("nHits", "TaggerTrackerHits.size()")
+     .Define("nParticles", "MCParticles.size()")
      .Define("real_position_x",   "TaggerTrackerHits.position.x")
      .Define("real_position_y",   "TaggerTrackerHits.position.y")
      .Define("real_position_z",   "TaggerTrackerHits.position.z")
-     .Define("real_vector",     real_vector,           {"TaggerTrackerHits"})
-     .Define("recon_position",  recon_position,        {"TaggerTrackerHits"})
-     .Define("recon_vector",    recon_vector,          {"recon_position"})
-     .Define("recon_projection",recon_projection,      {"recon_position","recon_vector"});
+     .Define("real_vector",     real_vector,           {"TaggerTrackerHits"});
+
+   for(auto part: parts){
+     std::string colName = part.fName;
+     Part_Vec.push_back(colName);
+     d1 = d1.Define(colName,getParticle(part.genStatus,part.pdg),{"MCParticles"});
+   }
 
    for(auto id: ids){
      std::string colName = id.first+"ID";
-     IDvec.push_back(colName);
+     ID_Vec.push_back(colName);
      d1 = d1.Define(colName,getSubID(id.first,detector),{"TaggerTrackerHits"});
    }
    
-     d1 = d1.Define("nhits2", nhits2,      {"MCParticles"})
-     .Define("vertex", beamVertex , {"MCParticles"})
-     .Define("beamE",  beamVector , {"MCParticles"})
-     .Define("scatteredE", electronVector , {"MCParticles"})
-     .Define("ex", "scatteredE.px()")
-     .Define("ey", "scatteredE.py()")
-     .Define("ez", "scatteredE.pz()")
-     //     .Define("eTheta", "scatteredE.Theta()")
-     .Define("eTheta", "acos(scatteredE.Vect().Unit().Dot(-beamE.Vect().Unit()))")
-     //     .Define("ePhi",   "scatteredE.Phi()")
-     .Define("ePhi",   "scatteredE.BoostToCM(beamE).Phi()")
-     .Define("eE", "scatteredE.energy()")
-     .Define("pseudorapidity", "scatteredE.eta()")
-     .Define("scatteredV", "beamE-scatteredE")
-//      .Define("scatteredV", scatterVector , {"scatteredE"})
-     .Define("qx", "scatteredV.px()")
-     .Define("qy", "scatteredV.py()")
-     .Define("qz", "scatteredV.pz()")
-     .Define("qTheta", "scatteredV.Theta()")
-     .Define("qPhi",   "scatteredV.Phi()")
+
+   d1 = d1.Define("vertex", beamVertex , {"MCParticles"})
+     .Define("eE", "scatteredElectron.energy()")
+     .Define("pseudorapidity", "scatteredElectron.eta()")
+     .Define("scatteredV", "beamElectron-scatteredElectron")
      .Define("qE", "scatteredV.energy()")
      .Define("Q2", "-scatteredV.M2()")
      .Define("logQ2", "log10(Q2)")
-
-     .Define("AnglePix11","atan(TaggerTrackerHits.momentum.x/TaggerTrackerHits.momentum.z)[layerID==0]")
-     .Define("AnglePix12","atan(TaggerTrackerHits.momentum.x/TaggerTrackerHits.momentum.z)[layerID==1]")
-   //   .Define("AnglePix21","atan(Tag_2_Track.momentum.x/Tag_2_Track.momentum.z)[layerTag2==0]")
-//      .Define("AnglePix22","atan(Tag_2_Track.momentum.x/Tag_2_Track.momentum.z)[layerTag2==1]")
 
      .Define("x11","xID[layerID==0&&systemID==195]")
      .Define("y11","yID[layerID==0&&systemID==195]")
@@ -361,12 +209,18 @@ R__LOAD_LIBRARY(libfmt.so)
     .Define("Npix13","x13.size()");
 
 
-   d1.Snapshot("test",outName,IDvec);
+   d1 = d1.Define("CapHit",getSubID("system",detector,"Cap_Track"));
+
+
+   ROOT::RDF::RSnapshotOptions opts;
+   opts.fMode = "UPDATE";
+
+   d1.Snapshot("ids",outName,ID_Vec);
+   d1.Snapshot("parts",outName,Part_Vec,opts);
+   d1.Snapshot("temp",outName,{"vertex","nParticles","nHits"},opts);
 
 
   
-//    ROOT::RDF::RSnapshotOptions opts;
-//    opts.fMode = "UPDATE";
 
 //    auto d2 = d1.Filter("(Npix11!=0 && Npix12!=0)");// && Npix13!=0)");
 //    d1.Snapshot("input",outName,{"nhitsT1","nhits2","vertex","Q2","logQ2","ex","ey","ez","eTheta","ePhi","eE","qx","qy","qz","qTheta","qPhi","qE","pseudorapidity"});
