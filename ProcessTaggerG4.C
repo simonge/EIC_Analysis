@@ -236,6 +236,19 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     return points;
 
   };
+  
+  auto vector_filter = [&](const std::vector<TVector3>& positions) {
+    
+    std::vector<bool> good;
+
+    for(auto pos: positions){
+      if(pos.z()<-8000&&pos.z()>-15000) good.push_back(true);
+      else good.push_back(false);
+
+    }
+    return good;
+
+  };
 
   auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
   std::vector<std::string> ID_Vec;
@@ -248,7 +261,8 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("cell_position",     cell_position,           {"TaggerTrackerHits"})
      .Define("real_time",         "TaggerTrackerHits.time")
      .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
-     .Define("vector_cut",        vector_cut,              {"real_position","real_vector"});
+     .Define("vector_cut",        vector_cut,              {"real_position","real_vector"})
+     .Define("vector_filter",     vector_filter,           {"vector_cut"});
 
    for(auto part: parts){
      std::string colName = part.fName;
@@ -295,7 +309,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","theta","qE","eE","logQ2"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","vector_filter","theta","qE","eE","logQ2"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);
