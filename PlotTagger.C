@@ -32,7 +32,7 @@ R__LOAD_LIBRARY(libfmt.so)
   void PlotTagger(TString inName          = "/scratch/EIC/Analysis/temp.root",
 		  TString outName         = "/scratch/EIC/Results/tempPlots.root"){
   
-    //ROOT::EnableImplicitMT();
+    ROOT::EnableImplicitMT();
 
   using namespace ROOT::Math;
   using namespace std;
@@ -45,58 +45,113 @@ R__LOAD_LIBRARY(libfmt.so)
   t->Add(inName);
 
   ROOT::RDataFrame d0(*t);
-
+  auto nGen = d0.Count();
+  cout << nGen.GetValue() << endl;
 
   auto dCut = d0.Filter("Any(vector_filter)");
+  auto nCut = dCut.Count();
+  cout << nCut.GetValue() << endl;
 
   double maxE  = 18;
   double maxQ2 = 0;
   double minQ2 = -9;
-    
-  auto gen_distributionEQ = d0.Histo2D({"gen_distributionE", "Generated Events;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2");
 
-  auto cut_distributionEQ = dCut.Histo2D({"gen_distributionE", "Generated Events;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2");
+  std::vector<ROOT::RDF::RResultPtr< ::TH2D>> EQHists;
+    
+EQHists.push_back(d0.Histo2D({"gen_distributionEQ", "Generated Events;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+
+ EQHists.push_back(dCut.Histo2D({"cut_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+
+ EQHists.push_back(dCut.Filter("Tag1_1").Histo2D({"tag1_1_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ EQHists.push_back(dCut.Filter("Tag1_2").Histo2D({"tag1_2_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ EQHists.push_back(dCut.Filter("Tag1_3").Histo2D({"tag1_3_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ EQHists.push_back(dCut.Filter("Tag1_4").Histo2D({"tag1_4_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ 
+ EQHists.push_back(dCut.Filter("Tag2_1").Histo2D({"tag2_1_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ EQHists.push_back(dCut.Filter("Tag2_2").Histo2D({"tag2_2_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ EQHists.push_back(dCut.Filter("Tag2_3").Histo2D({"tag2_3_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
+ EQHists.push_back(dCut.Filter("Tag2_4").Histo2D({"tag2_4_distributionEQ", "Generated Events with hit and angle cut;Electron Energy [GeV];log_{10}(Q^{2}) [GeV]", 100, 0.0, maxE,100,minQ2,maxQ2}, "eE","logQ2"));
     
   std::vector<ROOT::RDF::RResultPtr< ::TH2D>> rawHits;
 
-  int   nModules  = 2;
-  int   nLayers   = 4;
-  float pixelSize = 0.055;
   float modSizeX[2]  = {150,120};
   float modSizeY[2]  = {100,75};
-    
-  TString cut;
+  int   positionbins = 200;
 
-  for(int i=0; i<nModules; i++){
-    auto dModule = dCut.Define("modHits",[&i](ROOT::VecOps::RVec<int> module){
-			    return module==i+1;
-			  },{"moduleID"});
-    
+  //-------------------------------------------------------
+  // Raw Hit distributions
+  //-------------------------------------------------------
 
-    for(int j=0; j<nLayers; j++){
-      
-      auto dLayer = dModule.Define("layerHits",[&j](ROOT::VecOps::RVec<int> layer){
-			     return layer==j;
-			   },{"layerID"})
-	.Define("hits","cell_position[layerHits&&modHits]")
-	.Define("hitX","xID[layerHits&&modHits]*0.055")
-	.Define("hitY","yID[layerHits&&modHits]*0.055");
+  // Module1    
+  TString histName  = "Module 1, Layer 1";
+  TString histTitle = "Module1Layer1";
+  TString cutString = "layerID==0&&moduleID==1";
 
+  rawHits.push_back(dCut.Define("Cut","layerID==0&&moduleID==1")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[0], modSizeX[0],positionbins,-modSizeY[0],modSizeY[0]}, "hitX","hitY"));
 
-      TString histName;
-      histName.Form("Module %d, Layer %d",i+1,j+1);
-      
-      rawHits.push_back(dLayer.Histo2D({histName, histName+"x hit position [mm];y hit position [mm]", 100, -modSizeX[i], modSizeX[i],100,-modSizeY[i],modSizeY[i]}, "hitX","hitY"));
-			
-    }
-  }
+  histName  = "Module 1, Layer 2";
+  histTitle = "Module1Layer2";
+  rawHits.push_back(dCut.Define("Cut","layerID==1&&moduleID==1")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[0], modSizeX[0],positionbins,-modSizeY[0],modSizeY[0]}, "hitX","hitY"));
+
+  histName  = "Module 1, Layer 3";
+  histTitle = "Module1Layer3";
+  rawHits.push_back(dCut.Define("Cut","layerID==2&&moduleID==1")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[0], modSizeX[0],positionbins,-modSizeY[0],modSizeY[0]}, "hitX","hitY"));
+
+  histName  = "Module 1, Layer 4";
+  histTitle = "Module1Layer4";
+  rawHits.push_back(dCut.Define("Cut","layerID==3&&moduleID==1")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[0], modSizeX[0],positionbins,-modSizeY[0],modSizeY[0]}, "hitX","hitY"));
+
+  //Module2
+  histName  = "Module 2, Layer 1";
+  histTitle = "Module2Layer1";
+  rawHits.push_back(dCut.Define("Cut","layerID==0&&moduleID==2")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[1], modSizeX[1],positionbins,-modSizeY[1],modSizeY[1]}, "hitX","hitY"));
+
+  histName  = "Module 2, Layer 2";
+  histTitle = "Module2Layer2";
+  rawHits.push_back(dCut.Define("Cut","layerID==1&&moduleID==2")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[1], modSizeX[1],positionbins,-modSizeY[1],modSizeY[1]}, "hitX","hitY"));
+
+  histName  = "Module 2, Layer 3";
+  histTitle = "Module2Layer3";
+  rawHits.push_back(dCut.Define("Cut","layerID==2&&moduleID==2")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[1], modSizeX[1],positionbins,-modSizeY[1],modSizeY[1]}, "hitX","hitY"));
+
+  histName  = "Module 2, Layer 4";
+  histTitle = "Module2Layer4";
+  rawHits.push_back(dCut.Define("Cut","layerID==3&&moduleID==2")
+		    .Define("hitX","xID[Cut]*0.055")
+		    .Define("hitY","yID[Cut]*0.055")
+		    .Histo2D({histTitle, histName+";x hit position [mm];y hit position [mm]", positionbins, -modSizeX[1], modSizeX[1],positionbins,-modSizeY[1],modSizeY[1]}, "hitX","hitY"));
+
   
+
+
   for(auto hist:rawHits){
     hist->Write();
   }
 
-  gen_distributionEQ->Write();
-  cut_distributionEQ->Write();
+  for(auto hist:EQHists){
+    hist->Write();
+  }
   oFile->Close();
 
 }

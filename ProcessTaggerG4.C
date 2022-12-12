@@ -106,7 +106,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 // 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
-  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_1.edm4hep.root",
+  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
   
@@ -242,13 +242,14 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     std::vector<bool> good;
 
     for(auto pos: positions){
-      if(pos.z()<-8000&&pos.z()>-15000) good.push_back(true);
+      if(pos.z()<-8000&&pos.z()>-15000&&abs(pos.y())<100) good.push_back(true);
       else good.push_back(false);
 
     }
     return good;
 
   };
+  
 
   auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
   std::vector<std::string> ID_Vec;
@@ -285,10 +286,18 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("eE", "scatteredElectron.energy()")
      .Define("pseudorapidity", "scatteredElectron.eta()")
      .Define("scatteredV", "beamElectron-scatteredElectron")
-     .Define("theta", "scatteredV.theta()")
+     .Define("thetaV", "scatteredV.theta()")
      .Define("qE", "scatteredV.energy()")
      .Define("Q2", "-scatteredV.M2()")
      .Define("logQ2", "log10(Q2)")
+     .Define("Tag1_1","Any(layerID==0&&moduleID==1)")
+     .Define("Tag1_2","Tag1_1&&Any(layerID==1&&moduleID==1)")
+     .Define("Tag1_3","Tag1_2&&Any(layerID==2&&moduleID==1)")
+     .Define("Tag1_4","Tag1_3&&Any(layerID==3&&moduleID==1)")
+     .Define("Tag2_1","Any(layerID==0&&moduleID==2)")
+     .Define("Tag2_2","Tag2_1&&Any(layerID==1&&moduleID==2)")
+     .Define("Tag2_3","Tag2_2&&Any(layerID==2&&moduleID==2)")
+     .Define("Tag2_4","Tag2_3&&Any(layerID==3&&moduleID==2)")
      .Define("x11","xID[layerID==0&&systemID==195]")
      .Define("y11","yID[layerID==0&&systemID==195]")
      .Define("Npix11","x11.size()")
@@ -297,7 +306,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("Npix12","x12.size()")
      .Define("x13","xID[layerID==2&&systemID==195]")
      .Define("y13","yID[layerID==2&&systemID==195]")
-    .Define("Npix13","x13.size()");
+     .Define("Npix13","x13.size()");
 
 
 
@@ -309,7 +318,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","vector_filter","theta","qE","eE","logQ2"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","vector_filter","thetaV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);
