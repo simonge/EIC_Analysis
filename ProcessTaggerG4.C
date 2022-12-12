@@ -19,22 +19,18 @@ R__LOAD_LIBRARY(libfmt.so)
 #include "TTree.h"
 #include "TVector3.h"
 
-#include <algorithm>
-#include <iterator>
 #include <tuple>
 #include <vector>
 #include <cmath>
 
 #include "DD4hep/Detector.h"
 #include "DDRec/CellIDPositionConverter.h"
-
-#include "dd4pod/Geant4ParticleCollection.h"
-#include "dd4pod/TrackerHitCollection.h"
-#include "dd4pod/CalorimeterHitCollection.h"
  
 #include "edm4hep/MCParticleCollection.h"
 #include "edm4hep/SimTrackerHitCollection.h"
 #include "edm4hep/SimCalorimeterHitCollection.h"
+
+#pragma link C++ class std::vector<TVector3>;
   
 //-----------------------------------------------------------------------------------------
 // Grab Component functor
@@ -100,15 +96,19 @@ struct partDetails{
 
 int beamID = 3;
 int simID  = 1;
+//int simID  = 1;
 
 std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,beamID},{"scatteredElectron",11,simID}};
 
 //-----------------------------------------------------------------------------------------
 // Main Analysis Call
 //-----------------------------------------------------------------------------------------
-  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
+//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
+// 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
+// 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
+  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_1.edm4hep.root",
 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
-		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
+		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
   
   ROOT::EnableImplicitMT();
 
@@ -141,12 +141,23 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   auto beamVertex = [&](const std::vector<edm4hep::MCParticleData>& evt) {    
 
     for (const auto& h : evt) {
-      // The actual hit position:
       if(h.generatorStatus!=simID) continue;
-      return Cartesian3D(h.vertex.x,h.vertex.y,h.vertex.z);
+      return h.vertex;
       break;
     }
-    return Cartesian3D();
+    return edm4hep::Vector3d();
+  };
+
+  // -------------------------
+  // Beam Time 
+  // -------------------------
+  auto beamTime = [&](const std::vector<edm4hep::MCParticleData>& evt) {    
+
+    for (const auto& h : evt) {
+      if(h.generatorStatus!=simID) continue;
+      return h.time;
+    }
+    return (float)0.0;
   };
 
 
@@ -155,27 +166,89 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
   auto real_vector = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
     
+    std::vector<TVector3> vectors;
+
     for (const auto& h : hits) {
       TVector3 result(h.momentum.x,h.momentum.y,h.momentum.z);
       result *= 1/result.Mag();
-      return result;
+      vectors.push_back(result);
     }
-    return TVector3();
+    return vectors;
+  };
+
+  // -------------------------
+  // Real Hit Positions
+  // -------------------------
+  auto real_position = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
+    
+    std::vector<TVector3> positions;
+
+    for (const auto& h : hits) {
+      TVector3 result(h.position.x,h.position.y,h.position.z);
+      positions.push_back(result);
+    }
+    return positions;
+  };
+
+  // -------------------------
+  // Cell Hit Positions
+  // -------------------------
+  auto cell_position = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
+    
+    std::vector<TVector3> positions;
+
+    for (const auto& h : hits) {
+      auto pos1 = cellid_converter.position(h.cellID);
+      TVector3 result(pos1.x()*10,pos1.y()*10,pos1.z()*10);
+      positions.push_back(result);
+    }
+    return positions;
+  };
+
+  // -------------------------
+  // Vector XZ origin cut
+  // -------------------------
+//   auto vector_cut = [&](const std::vector<TVector3>& positions, const std::vector<TVector3>& vectors) {
+    
+//     if(positions.size()<=0) return TVector3();
+
+//     auto vec = vectors[0];
+//     auto pos = positions[0];
+
+//     float con = pos.x()/vec.x();
+
+//     auto   xPoint = pos-con*vec;
+//     return xPoint;
+
+//   };
+
+  auto vector_cut = [&](const std::vector<TVector3>& positions, const std::vector<TVector3>& vectors) {
+    
+    std::vector<TVector3> points;
+
+    for(int i=0; i<positions.size(); i++){
+      
+      float con = positions[i].x()/vectors[i].x();
+
+      points.push_back(positions[i]-con*vectors[i]);
+
+    }
+    return points;
+
   };
 
   auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
   std::vector<std::string> ID_Vec;
   std::vector<std::string> Part_Vec;
 
-
 //       //Do some calculations
 //  auto d1 = d0.Define("Hit Filter",[](auto conts){
    auto d1 = d0.Define("nHits", "TaggerTrackerHits.size()")
-     .Define("nParticles", "MCParticles.size()")
-     .Define("real_position_x",   "TaggerTrackerHits.position.x")
-     .Define("real_position_y",   "TaggerTrackerHits.position.y")
-     .Define("real_position_z",   "TaggerTrackerHits.position.z")
-     .Define("real_vector",     real_vector,           {"TaggerTrackerHits"});
+     .Define("real_position",     real_position,           {"TaggerTrackerHits"})
+     .Define("cell_position",     cell_position,           {"TaggerTrackerHits"})
+     .Define("real_time",         "TaggerTrackerHits.time")
+     .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
+     .Define("vector_cut",        vector_cut,              {"real_position","real_vector"});
 
    for(auto part: parts){
      std::string colName = part.fName;
@@ -190,14 +263,18 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
    }
    
 
+//    d1 = d1.Define("CapHit",getSubID("system",detector,"Cap_Track"))
+//      .Define("CapPass","CapHit.size()");
    d1 = d1.Define("vertex", beamVertex , {"MCParticles"})
+     .Define("nParticles",        "MCParticles.size()")
+     .Define("time", beamTime , {"MCParticles"})
      .Define("eE", "scatteredElectron.energy()")
      .Define("pseudorapidity", "scatteredElectron.eta()")
      .Define("scatteredV", "beamElectron-scatteredElectron")
+     .Define("theta", "scatteredV.theta()")
      .Define("qE", "scatteredV.energy()")
      .Define("Q2", "-scatteredV.M2()")
      .Define("logQ2", "log10(Q2)")
-
      .Define("x11","xID[layerID==0&&systemID==195]")
      .Define("y11","yID[layerID==0&&systemID==195]")
      .Define("Npix11","x11.size()")
@@ -209,17 +286,25 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     .Define("Npix13","x13.size()");
 
 
-   d1 = d1.Define("CapHit",getSubID("system",detector,"Cap_Track"));
-
 
    ROOT::RDF::RSnapshotOptions opts;
    opts.fMode = "UPDATE";
 
    d1.Snapshot("ids",outName,ID_Vec);
    d1.Snapshot("parts",outName,Part_Vec,opts);
-   d1.Snapshot("temp",outName,{"vertex","nParticles","nHits"},opts);
+
+   
+
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","theta","qE","eE","logQ2"};
+
+   for(auto a:ID_Vec) Out_Vec.push_back(a);
+   for(auto a:Part_Vec) Out_Vec.push_back(a);
+
+   d1.Snapshot("temp",outName,Out_Vec,opts);
 
 
+   //Hits distribution/layer
+   //Acceptance 
   
 
 //    auto d2 = d1.Filter("(Npix11!=0 && Npix12!=0)");// && Npix13!=0)");

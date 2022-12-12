@@ -23,8 +23,9 @@ using namespace TMVA;
 void FPRegression( TString myMethodList = "" )
 {
 
-   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
-   TString outfileName( "/scratch/EIC/Results/ML-Out/FP_Reg_qr_out18x275_Cheat_E_NoVertex.root" );
+   TString fname = "/scratch/EIC/G4out/qr_18x275_beam_out_1.edm4hep.root";
+   //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
+   TString outfileName( "/scratch/EIC/Results/ML-Out/qr_18x275_beam_out_1_test.root" );
 
     //---------------------------------------------------------------
    // This loads the library
