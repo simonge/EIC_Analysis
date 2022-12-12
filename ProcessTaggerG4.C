@@ -298,15 +298,30 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("Tag2_2","Tag2_1&&Any(layerID==1&&moduleID==2)")
      .Define("Tag2_3","Tag2_2&&Any(layerID==2&&moduleID==2)")
      .Define("Tag2_4","Tag2_3&&Any(layerID==3&&moduleID==2)")
-     .Define("x11","xID[layerID==0&&systemID==195]")
-     .Define("y11","yID[layerID==0&&systemID==195]")
+     .Define("x11","xID[layerID==0&&moduleID==1]")
+     .Define("y11","yID[layerID==0&&moduleID==1]")
      .Define("Npix11","x11.size()")
-     .Define("x12","xID[layerID==1&&systemID==195]")
-     .Define("y12","yID[layerID==1&&systemID==195]")
+     .Define("x12","xID[layerID==1&&moduleID==1]")
+     .Define("y12","yID[layerID==1&&moduleID==1]")
      .Define("Npix12","x12.size()")
-     .Define("x13","xID[layerID==2&&systemID==195]")
-     .Define("y13","yID[layerID==2&&systemID==195]")
-     .Define("Npix13","x13.size()");
+     .Define("x13","xID[layerID==2&&moduleID==1]")
+     .Define("y13","yID[layerID==2&&moduleID==1]")
+     .Define("Npix13","x13.size()")
+     .Define("x14","xID[layerID==3&&moduleID==1]")
+     .Define("y14","yID[layerID==3&&moduleID==1]")
+     .Define("Npix14","x14.size()")
+     .Define("x21","xID[layerID==0&&moduleID==2]")
+     .Define("y21","yID[layerID==0&&moduleID==2]")
+     .Define("Npix21","x21.size()")
+     .Define("x22","xID[layerID==1&&moduleID==2]")
+     .Define("y22","yID[layerID==1&&moduleID==2]")
+     .Define("Npix22","x22.size()")
+     .Define("x23","xID[layerID==2&&moduleID==2]")
+     .Define("y23","yID[layerID==2&&moduleID==2]")
+     .Define("Npix23","x23.size()")
+     .Define("x24","xID[layerID==3&&moduleID==2]")
+     .Define("y24","yID[layerID==3&&moduleID==2]")
+     .Define("Npix24","x24.size()");
 
 
 
@@ -318,7 +333,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","vector_filter","thetaV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","vector_filter","thetaV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);
