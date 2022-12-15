@@ -195,8 +195,11 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 // 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
-  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
-		       TString outName         = "/scratch/EIC/Analysis/temp.root",
+//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
+// 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
+// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
+		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_ReallyNoSolenoid_*.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/ReallyNoSolenoid.root",
@@ -364,8 +367,8 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
    auto d1 = d0.Define("nHits", "TaggerTrackerHits.size()")
      .Define("real_position",     real_position,           {"TaggerTrackerHits"})
      .Define("cell_position",     cell_position,           {"TaggerTrackerHits"})
-//      .Define("cell_vector2",      "cell_position[0]-cell_position[1]")
-//      .Define("cell_cut",          vector_cut2,             {"cell_position","cell_vector2"})
+     .Define("cell_vector2",      "cell_position[0]-cell_position")
+     .Define("cell_cut",          vector_cut,              {"cell_position","cell_vector2"})
      .Define("real_time",         "TaggerTrackerHits.time")
      .Define("real_EDep",         "TaggerTrackerHits.EDep")
      .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
