@@ -17,7 +17,8 @@ R__LOAD_LIBRARY(libfmt.so)
 #include "TMath.h"
 #include "TRandom3.h"
 #include "TTree.h"
-#include "TVector3.h"
+#include "TVector3.h" 
+#include "TLinearFitter.h"
 
 #include <tuple>
 #include <vector>
@@ -87,6 +88,94 @@ private:
   int PDG;
 };
 
+//-----------------------------------------------------------------------------------------
+// Linear fit functor
+//-----------------------------------------------------------------------------------------
+struct fitPoints{
+  fitPoints(int nLayers,int mod): maxLayer(nLayers), module(mod) { }
+  
+  std::pair<TVector3,double> operator()(const std::vector<TVector3>& positions, const ROOT::VecOps::RVec<float>& energies, const ROOT::VecOps::RVec<int>& moduleID, const ROOT::VecOps::RVec<int>& layerID) {
+    
+    TVector3 outVec;
+    TVector3 outPos;
+    double   outChi2 = 999999;
+//     TLinearFitter* lf = new TLinearFitter(1);
+//     lf->SetFormula( "pol1");
+    TLinearFitter* lf = new TLinearFitter(2);
+    lf->SetFormula( "1++x[0]++x[1]");
+    
+    ROOT::VecOps::RVec<double> x;
+    ROOT::VecOps::RVec<double> y;
+    ROOT::VecOps::RVec<double> z;
+    ROOT::VecOps::RVec<double> e;
+
+    for(uint i=0; i<positions.size(); i++){
+      if(moduleID[i]!=module) continue;
+      if(layerID[i]>maxLayer) continue;
+      
+//       x.push_back(positions[i].x());
+//       y.push_back(positions[i].y());
+      x.push_back(positions[i].x());
+      y.push_back(positions[i].y());
+      z.push_back(positions[i].z());
+      e.push_back(energies[i]);
+
+    }    
+   
+    if(e.size()>=2){
+         
+      double totalWeight = Sum(e);
+      double xMean = Sum(x*e)/totalWeight;
+      double yMean = Sum(y*e)/totalWeight;
+      double zMean = Sum(z*e)/totalWeight;
+      outPos.SetXYZ(xMean,yMean,zMean);
+
+      x -= xMean;
+      y -= yMean;
+      z -= zMean;
+      
+      ROOT::VecOps::RVec<double> v;
+      for(uint i=0; i<x.size(); i++){
+	v.push_back(x[i]);
+	v.push_back(y[i]);
+      }
+
+
+
+      lf->AssignData(e.size(), 2, &v[0], &z[0], &e[0]);    
+      lf->Eval();
+      TVectorD params;
+//       TVectorD errors;
+      lf->GetParameters(params);
+//       params.Print();
+//       lf->GetErrors(errors);
+//       errors.Print();
+      outChi2=lf->GetChisquare();
+//       cout << outChi2 << endl;
+      outVec.SetXYZ(params[0],params[1],params[2]);
+//       cout << lf->GetNpoints() <<endl;
+      //outVec.Print();
+      //(outVec.Unit()).Print();
+    }
+    
+
+    std::pair<TVector3,double> outPair = {outVec.Unit(),outChi2};
+
+    return outPair;
+
+  };
+  
+  void SetMaxLayers(int n){
+    maxLayer = n;
+  }
+  
+  
+private: 
+  int module;
+  int maxLayer;
+};
+  
+
 // Particle definitions and frame names.
 struct partDetails{
   std::string fName;
@@ -109,8 +198,11 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_ReallyNoSolenoid_*.edm4hep.root",
+// 		       TString outName         = "/scratch/EIC/Analysis/ReallyNoSolenoid.root",
+// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
   
-  ROOT::EnableImplicitMT();
+    ROOT::EnableImplicitMT();
 
   using namespace ROOT::Math;
   using namespace std;
@@ -120,7 +212,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   t->Add(inName);
 
   ROOT::RDataFrame d0(*t, {"TaggerTrackerHits", "MCParticles"});
-  //  d0.Range(0,1000); // Limit events to analyse 
+  //d0.Range(0,1000); // Limit events to analyse 
 
   // -------------------------
   // Get the DD4hep instance
@@ -226,7 +318,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     
     std::vector<TVector3> points;
 
-    for(int i=0; i<positions.size(); i++){
+    for(uint i=0; i<positions.size(); i++){
       
       float con = positions[i].x()/vectors[i].x();
 
@@ -236,6 +328,18 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     return points;
 
   };
+
+//   auto vector_cut2 = [&](const std::vector<TVector3>& positions, const TVector3& vectors) {
+    
+//     std::vector<TVector3> points;
+      
+//     float con = positions[0].x()/vectors.x();
+
+//     points.push_back(positions[0]-con*vectors);
+
+//     return points;
+
+//   };
   
   auto vector_filter = [&](const std::vector<TVector3>& positions) {
     
@@ -260,7 +364,10 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
    auto d1 = d0.Define("nHits", "TaggerTrackerHits.size()")
      .Define("real_position",     real_position,           {"TaggerTrackerHits"})
      .Define("cell_position",     cell_position,           {"TaggerTrackerHits"})
+//      .Define("cell_vector2",      "cell_position[0]-cell_position[1]")
+//      .Define("cell_cut",          vector_cut2,             {"cell_position","cell_vector2"})
      .Define("real_time",         "TaggerTrackerHits.time")
+     .Define("real_EDep",         "TaggerTrackerHits.EDep")
      .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
      .Define("vector_cut",        vector_cut,              {"real_position","real_vector"})
      .Define("vector_filter",     vector_filter,           {"vector_cut"});
@@ -280,13 +387,17 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
 //    d1 = d1.Define("CapHit",getSubID("system",detector,"Cap_Track"))
 //      .Define("CapPass","CapHit.size()");
-   d1 = d1.Define("vertex", beamVertex , {"MCParticles"})
+   d1 = d1.Define("iFilter","(TMath::Pi()-scatteredElectron.Theta())<0.0105")
+     .Define("vertex", beamVertex , {"MCParticles"})
      .Define("nParticles",        "MCParticles.size()")
      .Define("time", beamTime , {"MCParticles"})
      .Define("eE", "scatteredElectron.energy()")
+     .Define("thetaE", "acos((scatteredElectron.Vect().Unit()).Dot(beamElectron.Vect().Unit()))")
+     //     .Define("phiE", "acos((((beamElectron.Vect()).Cross(TVector3(0,1,0))).Unit()).Dot((scatteredElectron.Vect()).Cross(TVector3(0,1,0)).Unit()))")
      .Define("pseudorapidity", "scatteredElectron.eta()")
      .Define("scatteredV", "beamElectron-scatteredElectron")
      .Define("thetaV", "scatteredV.theta()")
+     .Define("phiV", "scatteredV.phi()")
      .Define("qE", "scatteredV.energy()")
      .Define("Q2", "-scatteredV.M2()")
      .Define("logQ2", "log10(Q2)")
@@ -323,8 +434,10 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("y24","yID[layerID==3&&moduleID==2]")
      .Define("Npix24","x24.size()");
 
-
-
+//    d1 = d1.Define("fit_temp", fitPoints(3,1) , {"vector_cut","real_EDep","moduleID","layerID"})
+//      .Define("fit_vector","fit_temp.first")
+//      .Define("fit_chi2","fit_temp.second");
+   
    ROOT::RDF::RSnapshotOptions opts;
    opts.fMode = "UPDATE";
 
@@ -333,7 +446,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","vector_cut","vector_filter","thetaV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","iFilter","vector_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);

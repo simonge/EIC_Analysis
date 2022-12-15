@@ -25,7 +25,7 @@ void TaggerRegression( TString myMethodList = "" )
 
    TString fname = "/scratch/EIC/Analysis/temp.root";
    //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
-   TString outfileName( "/scratch/EIC/Results/ML-Out/test_new2.root" );
+   TString outfileName( "/scratch/EIC/Results/ML-Out/test_true_ETP.root" );
 
     //---------------------------------------------------------------
    // This loads the library
@@ -88,20 +88,24 @@ void TaggerRegression( TString myMethodList = "" )
 //     dataloader->AddVariable( "TMath::Floor(Ypix11[0]/2)", "Ypix11", "units", 'mm' );
 //     dataloader->AddVariable( "TMath::Floor(Xpix12[0]/2)", "Xpix12", "units", 'mm' );
 //     dataloader->AddVariable( "TMath::Floor(Ypix12[0]/2)", "Ypix12", "units", 'mm' );
-   dataloader->AddVariable( "x11", "Xpix11", "units", 'F' );
-   dataloader->AddVariable( "y11", "Ypix11", "units", 'F' );
-   dataloader->AddVariable( "x12", "Xpix12", "units", 'F' );
-   dataloader->AddVariable( "y12", "Ypix12", "units", 'F' );
-   dataloader->AddVariable( "x13", "Xpix13", "units", 'F' );
-   dataloader->AddVariable( "y13", "Ypix13", "units", 'F' );
-   dataloader->AddVariable( "x14", "Xpix14", "units", 'F' );
-   dataloader->AddVariable( "y14", "Ypix14", "units", 'F' );
-   //  dataloader->AddVariable( "real_position[0].fX", "real_position_x", "units", 'mm' );
-   //  dataloader->AddVariable( "real_position[0].fY", "real_position_y", "units", 'mm' );
-   //  dataloader->AddVariable( "real_position[0].fZ", "real_position_z", "units", 'mm' );
-   //  dataloader->AddVariable( "real_vector[0].fX", "real_vector.x", "units", 'mm' );
-   //  dataloader->AddVariable( "real_vector[0].fY", "real_vector.y", "units", 'mm' );
-   //  dataloader->AddVariable( "real_vector[0].fZ", "real_vector.z", "units", 'mm' );
+//    dataloader->AddVariable( "x11[0]", "Xpix11", "units", 'F' );
+//    dataloader->AddVariable( "y11[0]", "Ypix11", "units", 'F' );
+//    dataloader->AddVariable( "x12[0]", "Xpix12", "units", 'F' );
+//    dataloader->AddVariable( "y12[0]", "Ypix12", "units", 'F' );
+//    dataloader->AddVariable( "x13[0]", "Xpix13", "units", 'F' );
+//    dataloader->AddVariable( "y13[0]", "Ypix13", "units", 'F' );
+//    dataloader->AddVariable( "x14[0]", "Xpix14", "units", 'F' );
+//    dataloader->AddVariable( "y14[0]", "Ypix14", "units", 'F' );
+
+   dataloader->AddVariable( "vector_cut[0].fY", "real_position_y", "units", 'F' );
+   dataloader->AddVariable( "vector_cut[0].fZ", "real_position_z", "units", 'F' );
+//    dataloader->AddVariable( "real_position[0].fX", "real_position_x", "units", 'F' );
+//    dataloader->AddVariable( "real_position[0].fY", "real_position_y", "units", 'F' );
+//    dataloader->AddVariable( "real_position[0].fZ", "real_position_z", "units", 'F' );
+   dataloader->AddVariable( "real_vector[0].fX", "real_vector.x", "units", 'F' );
+   dataloader->AddVariable( "real_vector[0].fY", "real_vector.y", "units", 'F' );
+   //dataloader->AddVariable( "real_vector[0].fZ", "real_vector.z", "units", 'F' );
+
 //   dataloader->AddVariable( "vertex.fX", "VertexX", "units", 'mm' );
 //   dataloader->AddVariable( "vertex.fY", "VertexY", "units", 'mm' );
 //   dataloader->AddVariable( "vertex.fZ", "VertexZ", "units", 'mm' );
@@ -111,7 +115,6 @@ void TaggerRegression( TString myMethodList = "" )
    // input variables, the response values of all trained MVAs, and the spectator variables
   dataloader->AddSpectator( "eE" );
   dataloader->AddSpectator( "logQ2" );
-  dataloader->AddSpectator( "scatteredElectron" );
 //   dataloader->AddSpectator( "qPhi" );
 //   dataloader->AddSpectator( "qTheta" );
   //    dataloader->AddSpectator( "logQ2",  "Spectator 1", "units", 'F' );
@@ -121,10 +124,12 @@ void TaggerRegression( TString myMethodList = "" )
   // dataloader->AddTarget( "Xpix11" );
   //    dataloader->AddTarget( "Ypix11" );
   dataloader->AddTarget( "eE" );
-  //         dataloader->AddTarget( "cos(qPhi)" );
-  //   dataloader->AddTarget( "sin(qPhi)" );
+  dataloader->AddTarget( "thetaE" );
+  dataloader->AddTarget( "cos(phiV)" );
+  dataloader->AddTarget( "sin(phiV)" );
   //     dataloader->AddTarget( "qTheta" );
-  //  dataloader->AddTarget( "logQ2" );
+  //dataloader->AddTarget( "logQ2" );
+  //dataloader->AddTarget( "logQ2" );
   //    dataloader->AddTarget( "qx" );
   //    dataloader->AddTarget( "qy" );
   //    dataloader->AddTarget( "qz" );
@@ -151,20 +156,23 @@ void TaggerRegression( TString myMethodList = "" )
    // Register the regression tree
  
    TTree *regTree1 = (TTree*)input->Get("temp");
+   //regTree1->SetEntries(4000000);
 //    TTree *regTree2 = (TTree*)input->Get("detector2");
  
    // global event weights per tree (see below for setting event-wise weights)
    Double_t regWeight  = 1.0;
  
    // You can add an arbitrary number of regression trees
-//    dataloader->AddRegressionTree( regTree1, regWeight );
+   dataloader->AddRegressionTree( regTree1, regWeight );
  
    // This would set individual event weights (the variables defined in the
    // expression need to exist in the original TTree)
    //dataloader->SetWeightExpression( "var1", "Regression" );
    // Apply additional cuts on the signal and background samples (can be different)
-   TCut mycut = "eE<17.8 && eE>2 && Tag1_4"; 
-   dataloader->AddTree( regTree1, "F", regWeight,mycut );
+   TCut mycut = "(Tag1_4||Tag2_4)&&iFilter"; 
+   //TCut mycut = "Tag1_4"; 
+   //   TCut mycut = "eE<12 && eE>6.5 && Tag1_4"; 
+//    dataloader->AddTree( regTree1, "Regression", regWeight,mycut );
  
    dataloader->PrepareTrainingAndTestTree(mycut,"nTrain_Regression=0:nTest_Regression=0:SplitMode=Random:NormMode=NumEvents:!V");
 
@@ -174,17 +182,19 @@ void TaggerRegression( TString myMethodList = "" )
  
      //     TString layoutString("Layout=TANH|200,TANH|100,TANH|100,LINEAR");
      //     TString layoutString("Layout=TANH|50,TANH|30,TANH|20,TANH|20,LINEAR");
-     TString layoutString("Layout=TANH|64,TANH|64,TANH|32,TANH|16,TANH|8,TANH|4,LINEAR");
+     TString layoutString("Layout=TANH|1024,TANH|64,TANH|32,TANH|16,LINEAR");//USED
+     //TString layoutString("Layout=TANH|10240,TANH|16,TANH|16,LINEAR");
+     //     TString layoutString("Layout=TANH|1024,TANH|32,TANH|32,TANH|16,TANH|16,TANH|16,LINEAR");
      //     TString layoutString("Layout=TANH|400,TANH|8,TANH|16,TANH|8,TANH|4,LINEAR");
      // TString layoutString("Layout=LINEAR|6,TANH|6,LINEAR");
  
  
       TString trainingStrategyString("TrainingStrategy=");
  
-      trainingStrategyString +="LearningRate=1e-4,Momentum=0.2,ConvergenceSteps=200,BatchSize=40,TestRepetitions=1,WeightDecay=0,Regularization=L2,Optimizer=Adam";
+      trainingStrategyString +="LearningRate=1e-4,Momentum=0.01,DropConfig=0.0+0.0+0.0+0.0+0.0,ConvergenceSteps=1000,BatchSize=200,TestRepetitions=1,WeightDecay=0.0,Regularization=L2,Optimizer=Adam";
       //      trainingStrategyString +="LearningRate=1e-3,Momentum=0.3,ConvergenceSteps=10,BatchSize=100,TestRepetitions=1,WeightDecay=0,Regularization=L2,Optimizer=Adam";
  
-      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
       //      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
       nnOptions.Append(":");
       nnOptions.Append(layoutString);

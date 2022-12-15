@@ -48,7 +48,8 @@ R__LOAD_LIBRARY(libfmt.so)
   auto nGen = d0.Count();
   cout << nGen.GetValue() << endl;
 
-  auto dCut = d0.Filter("Any(vector_filter)");
+  auto dCut = d0.Filter("iFilter&&Any(vector_filter)");
+  //  auto dCut = d0.Filter("Any(vector_filter)");
   auto nCut = dCut.Count();
   cout << nCut.GetValue() << endl;
 
