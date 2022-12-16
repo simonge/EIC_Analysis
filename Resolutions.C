@@ -10,15 +10,15 @@ using namespace std;
 
 std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 
-std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/test_true_ETP.root"};
+std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/test_cell_ETP.root"};
 
 
 void Resolutions(){
 
-  TString outName  = "ResolutionsA.pdf";
-  TString outName2 = "ResolutionsB.pdf";
-  TString outNamepng  = "ResolutionsA.png";
-  TString outNamepng2 = "ResolutionsB.png";
+  TString outName  = "Resolutions55A.pdf";
+  TString outName2 = "Resolutions55B.pdf";
+  TString outNamepng  = "Resolutions55A.png";
+  TString outNamepng2 = "Resolutions55B.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -149,16 +149,16 @@ void Resolutions(){
   TH1D* PRes = (TH1D*)(Phi1D.GetPtr());
 
   can->cd(4);
-  //ERes->Fit("gaus");
+  ERes->Fit("gaus");
   ERes->Draw("colz");
   ERes->SetStats(0);
   can->cd(5);
   TRes->Draw("colz");
-  //TRes->Fit("gaus");
+  TRes->Fit("gaus");
   TRes->SetStats(0);
   can->cd(6);
   PRes->Draw("colz");
-  //PRes->Fit("gaus");
+  PRes->Fit("gaus");
   PRes->SetStats(0);
   
   can->SaveAs(outName);

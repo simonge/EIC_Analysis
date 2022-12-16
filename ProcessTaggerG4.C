@@ -195,12 +195,12 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 // 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
-//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
-// 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
-// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
-  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
-		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
+  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
+		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
+// 		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
+// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_ReallyNoSolenoid_*.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/ReallyNoSolenoid.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
@@ -301,6 +301,32 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   };
 
   // -------------------------
+  // Cell Hit Positions
+  // -------------------------
+  auto cell_vector = [&](const std::vector<TVector3>& hits, const ROOT::VecOps::RVec<int>& layerID, const  ROOT::VecOps::RVec<int>& moduleID) {
+  //  auto cell_vector = [&](const std::vector<TVector3>& hits) {
+    
+    std::vector<TVector3> vectors;
+    TVector3 iPos;
+    int module;
+    
+    for(uint i=0; i<hits.size(); i++){
+      if(i==0){
+	module=moduleID[i];
+	iPos=hits[i];      
+	if(layerID[i]!=0) break;
+      }
+      if(i>0 && module==moduleID[i] && layerID[i]>=1) vectors.push_back((hits[i]-iPos).Unit());
+    }
+    
+    while(vectors.size()<hits.size()){
+      vectors.push_back(TVector3(1,0,0));
+    }
+
+    return vectors;
+  };
+
+  // -------------------------
   // Vector XZ origin cut
   // -------------------------
 //   auto vector_cut = [&](const std::vector<TVector3>& positions, const std::vector<TVector3>& vectors) {
@@ -367,8 +393,6 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
    auto d1 = d0.Define("nHits", "TaggerTrackerHits.size()")
      .Define("real_position",     real_position,           {"TaggerTrackerHits"})
      .Define("cell_position",     cell_position,           {"TaggerTrackerHits"})
-     .Define("cell_vector2",      "cell_position[0]-cell_position")
-     .Define("cell_cut",          vector_cut,              {"cell_position","cell_vector2"})
      .Define("real_time",         "TaggerTrackerHits.time")
      .Define("real_EDep",         "TaggerTrackerHits.EDep")
      .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
@@ -390,7 +414,9 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
 //    d1 = d1.Define("CapHit",getSubID("system",detector,"Cap_Track"))
 //      .Define("CapPass","CapHit.size()");
-   d1 = d1.Define("iFilter","(TMath::Pi()-scatteredElectron.Theta())<0.0105")
+   d1 = d1.Define("cell_vector",       cell_vector,             {"cell_position","layerID","moduleID"})
+     .Define("cell_cut",          vector_cut,              {"cell_position","cell_vector"})
+     .Define("iFilter","(TMath::Pi()-scatteredElectron.Theta())<0.0105")
      .Define("vertex", beamVertex , {"MCParticles"})
      .Define("nParticles",        "MCParticles.size()")
      .Define("time", beamTime , {"MCParticles"})
@@ -449,7 +475,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","real_vector","iFilter","vector_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","vector_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);

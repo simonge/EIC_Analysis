@@ -25,7 +25,8 @@ void TaggerRegression( TString myMethodList = "" )
 
    TString fname = "/scratch/EIC/Analysis/temp.root";
    //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
-   TString outfileName( "/scratch/EIC/Results/ML-Out/test_true_ETP.root" );
+   //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
+   TString outfileName( "/scratch/EIC/Results/ML-Out/test_real_ETP.root" );
 
     //---------------------------------------------------------------
    // This loads the library
@@ -38,29 +39,6 @@ void TaggerRegression( TString myMethodList = "" )
  
    // Neural Network
    Use["DNN_CPU"]         = 1;
-
-   // ---------------------------------------------------------------
- 
-   std::cout << std::endl;
-   std::cout << "==> Start TMVARegression" << std::endl;
- 
-   // Select methods (don't look at this code - not of interest)
-   if (myMethodList != "") {
-      for (std::map<std::string,int>::iterator it = Use.begin(); it != Use.end(); it++) it->second = 0;
- 
-      std::vector<TString> mlist = gTools().SplitString( myMethodList, ',' );
-      for (UInt_t i=0; i<mlist.size(); i++) {
-         std::string regMethod(mlist[i].Data());
- 
-         if (Use.find(regMethod) == Use.end()) {
-            std::cout << "Method \"" << regMethod << "\" not known in TMVA under this name. Choose among the following:" << std::endl;
-            for (std::map<std::string,int>::iterator it = Use.begin(); it != Use.end(); it++) std::cout << it->first << " ";
-            std::cout << std::endl;
-            return;
-         }
-         Use[regMethod] = 1;
-      }
-   }
  
    // --------------------------------------------------------------------------------------------------
  
@@ -70,8 +48,10 @@ void TaggerRegression( TString myMethodList = "" )
    TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
  
    // Create the factory object. Later you can choose the methods
-   TMVA::Factory *factory = new TMVA::Factory( "TMVARegression", outputFile,
+   TMVA::Factory *factory = new TMVA::Factory( "RealHits", outputFile,
                                                "!V:!Silent:Color:DrawProgressBar:Transformations=I;G;N;N+G;P+N+G:AnalysisType=Regression" );
+   //   TMVA::Factory *factory = new TMVA::Factory( "TMVARegression", outputFile,
+   //                                               "!V:!Silent:Color:DrawProgressBar:Transformations=I;G;N;N+G;P+N+G:AnalysisType=Regression" );
  
  
    TMVA::DataLoader *dataloader=new TMVA::DataLoader("dataset");
@@ -99,11 +79,21 @@ void TaggerRegression( TString myMethodList = "" )
 
    dataloader->AddVariable( "vector_cut[0].fY", "real_position_y", "units", 'F' );
    dataloader->AddVariable( "vector_cut[0].fZ", "real_position_z", "units", 'F' );
+
+//    dataloader->AddVariable( "cell_cut[0].fY", "real_position_y", "units", 'F' );
+//    dataloader->AddVariable( "cell_cut[0].fZ", "real_position_z", "units", 'F' );
+
 //    dataloader->AddVariable( "real_position[0].fX", "real_position_x", "units", 'F' );
 //    dataloader->AddVariable( "real_position[0].fY", "real_position_y", "units", 'F' );
 //    dataloader->AddVariable( "real_position[0].fZ", "real_position_z", "units", 'F' );
+
+//    dataloader->AddVariable( "cell_vector[0].fX", "real_vector.x", "units", 'F' );
+//    dataloader->AddVariable( "cell_vector[0].fY", "real_vector.y", "units", 'F' );
+
    dataloader->AddVariable( "real_vector[0].fX", "real_vector.x", "units", 'F' );
    dataloader->AddVariable( "real_vector[0].fY", "real_vector.y", "units", 'F' );
+
+
    //dataloader->AddVariable( "real_vector[0].fZ", "real_vector.z", "units", 'F' );
 
 //   dataloader->AddVariable( "vertex.fX", "VertexX", "units", 'mm' );
@@ -176,7 +166,6 @@ void TaggerRegression( TString myMethodList = "" )
  
    dataloader->PrepareTrainingAndTestTree(mycut,"nTrain_Regression=0:nTest_Regression=0:SplitMode=Random:NormMode=NumEvents:!V");
 
- 
  
    if (Use["DNN_CPU"] or Use["DNN_GPU"]) {
  
