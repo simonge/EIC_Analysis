@@ -17,7 +17,7 @@ R__LOAD_LIBRARY(libfmt.so)
 #include "TMath.h"
 #include "TRandom3.h"
 #include "TTree.h"
-#include "TVector3.h" 
+#include "Math/Vector3D.h" 
 #include "TLinearFitter.h"
 
 #include <tuple>
@@ -30,8 +30,7 @@ R__LOAD_LIBRARY(libfmt.so)
 #include "edm4hep/MCParticleCollection.h"
 #include "edm4hep/SimTrackerHitCollection.h"
 #include "edm4hep/SimCalorimeterHitCollection.h"
-
-#pragma link C++ class std::vector<TVector3>;
+using namespace ROOT::Math;
   
 //-----------------------------------------------------------------------------------------
 // Grab Component functor
@@ -94,10 +93,10 @@ private:
 struct fitPoints{
   fitPoints(int nLayers,int mod): maxLayer(nLayers), module(mod) { }
   
-  std::pair<TVector3,double> operator()(const std::vector<TVector3>& positions, const ROOT::VecOps::RVec<float>& energies, const ROOT::VecOps::RVec<int>& moduleID, const ROOT::VecOps::RVec<int>& layerID) {
+  std::pair<XYZVector,double> operator()(const std::vector<XYZVector>& positions, const ROOT::VecOps::RVec<float>& energies, const ROOT::VecOps::RVec<int>& moduleID, const ROOT::VecOps::RVec<int>& layerID) {
     
-    TVector3 outVec;
-    TVector3 outPos;
+    XYZVector outVec;
+    XYZVector outPos;
     double   outChi2 = 999999;
 //     TLinearFitter* lf = new TLinearFitter(1);
 //     lf->SetFormula( "pol1");
@@ -159,7 +158,7 @@ struct fitPoints{
     }
     
 
-    std::pair<TVector3,double> outPair = {outVec.Unit(),outChi2};
+    std::pair<XYZVector,double> outPair = {outVec.Unit(),outChi2};
 
     return outPair;
 
@@ -261,11 +260,11 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
   auto real_vector = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
     
-    std::vector<TVector3> vectors;
+    std::vector<XYZVector> vectors;
 
     for (const auto& h : hits) {
-      TVector3 result(h.momentum.x,h.momentum.y,h.momentum.z);
-      result *= 1/result.Mag();
+      XYZVector result(h.momentum.x,h.momentum.y,h.momentum.z);
+      result *= 1/result.R();
       vectors.push_back(result);
     }
     return vectors;
@@ -276,10 +275,10 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
   auto real_position = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
     
-    std::vector<TVector3> positions;
+    std::vector<XYZVector> positions;
 
     for (const auto& h : hits) {
-      TVector3 result(h.position.x,h.position.y,h.position.z);
+      XYZVector result(h.position.x,h.position.y,h.position.z);
       positions.push_back(result);
     }
     return positions;
@@ -290,11 +289,11 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
   auto cell_position = [&](const std::vector<edm4hep::SimTrackerHitData>& hits) {
     
-    std::vector<TVector3> positions;
+    std::vector<XYZVector> positions;
 
     for (const auto& h : hits) {
       auto pos1 = cellid_converter.position(h.cellID);
-      TVector3 result(pos1.x()*10,pos1.y()*10,pos1.z()*10);
+      XYZVector result(pos1.x()*10,pos1.y()*10,pos1.z()*10);
       positions.push_back(result);
     }
     return positions;
@@ -303,11 +302,11 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
   // Cell Hit Positions
   // -------------------------
-  auto cell_vector = [&](const std::vector<TVector3>& hits, const ROOT::VecOps::RVec<int>& layerID, const  ROOT::VecOps::RVec<int>& moduleID) {
-  //  auto cell_vector = [&](const std::vector<TVector3>& hits) {
+  auto cell_vector = [&](const std::vector<XYZVector>& hits, const ROOT::VecOps::RVec<int>& layerID, const  ROOT::VecOps::RVec<int>& moduleID) {
+  //  auto cell_vector = [&](const std::vector<XYZVector>& hits) {
     
-    std::vector<TVector3> vectors;
-    TVector3 iPos;
+    std::vector<XYZVector> vectors;
+    XYZVector iPos;
     int module;
     
     for(uint i=0; i<hits.size(); i++){
@@ -320,7 +319,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     }
     
     while(vectors.size()<hits.size()){
-      vectors.push_back(TVector3(1,0,0));
+      vectors.push_back(XYZVector(1,0,0));
     }
 
     return vectors;
@@ -329,9 +328,9 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
   // Vector XZ origin cut
   // -------------------------
-//   auto vector_cut = [&](const std::vector<TVector3>& positions, const std::vector<TVector3>& vectors) {
+//   auto vector_cut = [&](const std::vector<XYZVector>& positions, const std::vector<XYZVector>& vectors) {
     
-//     if(positions.size()<=0) return TVector3();
+//     if(positions.size()<=0) return XYZVector();
 
 //     auto vec = vectors[0];
 //     auto pos = positions[0];
@@ -343,9 +342,9 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
 //   };
 
-  auto vector_cut = [&](const std::vector<TVector3>& positions, const std::vector<TVector3>& vectors) {
+  auto vector_cut = [&](const  std::vector<XYZVector>& positions, const  std::vector<XYZVector>& vectors) {
     
-    std::vector<TVector3> points;
+    std::vector<XYZVector> points;
 
     for(uint i=0; i<positions.size(); i++){
       
@@ -358,9 +357,9 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
   };
 
-//   auto vector_cut2 = [&](const std::vector<TVector3>& positions, const TVector3& vectors) {
+//   auto vector_cut2 = [&](const std::vector<XYZVector>& positions, const XYZVector& vectors) {
     
-//     std::vector<TVector3> points;
+//     std::vector<XYZVector> points;
       
 //     float con = positions[0].x()/vectors.x();
 
@@ -370,9 +369,9 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
 //   };
   
-  auto vector_filter = [&](const std::vector<TVector3>& positions) {
+  auto vector_filter = [&](const std::vector<XYZVector>& positions) {
     
-    std::vector<bool> good;
+    ROOT::VecOps::RVec<bool> good;
 
     for(auto pos: positions){
       if(pos.z()<-8000&&pos.z()>-15000&&abs(pos.y())<100) good.push_back(true);
@@ -422,7 +421,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("time", beamTime , {"MCParticles"})
      .Define("eE", "scatteredElectron.energy()")
      .Define("thetaE", "acos((scatteredElectron.Vect().Unit()).Dot(beamElectron.Vect().Unit()))")
-     //     .Define("phiE", "acos((((beamElectron.Vect()).Cross(TVector3(0,1,0))).Unit()).Dot((scatteredElectron.Vect()).Cross(TVector3(0,1,0)).Unit()))")
+     //     .Define("phiE", "acos((((beamElectron.Vect()).Cross(XYZVector(0,1,0))).Unit()).Dot((scatteredElectron.Vect()).Cross(XYZVector(0,1,0)).Unit()))")
      .Define("pseudorapidity", "scatteredElectron.eta()")
      .Define("scatteredV", "beamElectron-scatteredElectron")
      .Define("thetaV", "scatteredV.theta()")
@@ -463,6 +462,8 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("y24","yID[layerID==3&&moduleID==2]")
      .Define("Npix24","x24.size()");
 
+   //[&](const std::vector<XYZVector>& vec){}
+
 //    d1 = d1.Define("fit_temp", fitPoints(3,1) , {"vector_cut","real_EDep","moduleID","layerID"})
 //      .Define("fit_vector","fit_temp.first")
 //      .Define("fit_chi2","fit_temp.second");
@@ -491,8 +492,8 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 //    d1.Snapshot("input",outName,{"nhitsT1","nhits2","vertex","Q2","logQ2","ex","ey","ez","eTheta","ePhi","eE","qx","qy","qz","qTheta","qPhi","qE","pseudorapidity"});
 //    //d2.Snapshot("detector1",outname,{"x11","y11","Npix11","x12","y12","Npix12","x13","y13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity"},opts);
 //    //   d1.Filter("B2BPass!=0")
-//    //  .Snapshot("detectors",outname,{"nhitsT1","layerID","vertex","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","real_position_x","real_position_y","real_position_z","real_vector"},opts);
-//    d2.Snapshot("detector1",outName,{"vertex","x11","y11","Npix11","x12","y12","Npix12","x13","y13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","real_position_x","real_position_y","real_position_z","real_vector"},opts);
+//    //  .Snapshot("detectors",outname,{"nhitsT1","layerID","vertex","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","cell_position_x","cell_position_y","cell_position_z","cell_vector"},opts);
+//    d2.Snapshot("detector1",outName,{"vertex","x11","y11","Npix11","x12","y12","Npix12","x13","y13","Npix13","Q2","logQ2","eE","qTheta","qPhi","eTheta","ePhi","pseudorapidity","cell_position_x","cell_position_y","cell_position_z","cell_vector"},opts);
 
 
 }

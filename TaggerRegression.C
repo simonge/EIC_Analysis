@@ -26,6 +26,7 @@ void TaggerRegression( TString myMethodList = "" )
    TString fname = "/scratch/EIC/Analysis/temp.root";
    //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
    //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
+
    TString outfileName( "/scratch/EIC/Results/ML-Out/test_real_ETP.root" );
 
     //---------------------------------------------------------------
@@ -64,18 +65,6 @@ void TaggerRegression( TString myMethodList = "" )
    // Define the input variables that shall be used for the MVA training
    // note that you may also use variable expressions, such as: "3*var1/var2*abs(var3)"
    // [all types of expressions that can also be parsed by TTree::Draw( "expression" )]
-//     dataloader->AddVariable( "TMath::Floor(Xpix11[0]/2)", "Xpix11", "units", 'mm' );
-//     dataloader->AddVariable( "TMath::Floor(Ypix11[0]/2)", "Ypix11", "units", 'mm' );
-//     dataloader->AddVariable( "TMath::Floor(Xpix12[0]/2)", "Xpix12", "units", 'mm' );
-//     dataloader->AddVariable( "TMath::Floor(Ypix12[0]/2)", "Ypix12", "units", 'mm' );
-//    dataloader->AddVariable( "x11[0]", "Xpix11", "units", 'F' );
-//    dataloader->AddVariable( "y11[0]", "Ypix11", "units", 'F' );
-//    dataloader->AddVariable( "x12[0]", "Xpix12", "units", 'F' );
-//    dataloader->AddVariable( "y12[0]", "Ypix12", "units", 'F' );
-//    dataloader->AddVariable( "x13[0]", "Xpix13", "units", 'F' );
-//    dataloader->AddVariable( "y13[0]", "Ypix13", "units", 'F' );
-//    dataloader->AddVariable( "x14[0]", "Xpix14", "units", 'F' );
-//    dataloader->AddVariable( "y14[0]", "Ypix14", "units", 'F' );
 
    dataloader->AddVariable( "vector_cut[0].fY", "real_position_y", "units", 'F' );
    dataloader->AddVariable( "vector_cut[0].fZ", "real_position_z", "units", 'F' );
