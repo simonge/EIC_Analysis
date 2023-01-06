@@ -17,6 +17,8 @@ void Rates(){
 
   TString outName      = "Rates.pdf";
   TString outNamepng   = "Rates.png";
+  TString outQ2Name    = "Q2Rates.pdf";
+  TString outQ2Namepng = "Q2Rates.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -40,10 +42,11 @@ void Rates(){
 
   gStyle->SetPalette(kBird);
 
-  double Nevents   = 10000000;
-  double meanQR    = 0.00374;
-  double meanBrems = 11.65;
-  double bunchFreq = 10e-9;
+  double Nevents    = 10000000;
+  double meanQR     = 0.00374;
+  double meanQRtrig = 0.5;
+  double meanBrems  = 11.65;
+  double bunchFreq  = 10e-9;
 
   double pixelArea        = 0.055*0.055;
 
@@ -114,6 +117,42 @@ void Rates(){
   can->SaveAs(outName);
   can->SaveAs(outNamepng);
 
+  int    Q2bins  = 400;
+  double Q2min   = -15;
+  double Q2max   = 2;
+
+  TCanvas* can2 = new TCanvas("can","can",1800,900);
+  can2->Divide(2,1);
+
+  // Q2 rate plots
+  auto QR_Q2    = df2.Filter("Tag1_4||Tag2_4").Histo1D({"QR_Q2",";logQ2;Event Rate per trigger",Q2bins,Q2min,Q2max},"logQ2");
+  auto Brem_Q2  = dfb2.Filter("Tag1_4||Tag2_4").Histo1D({"Brem_Q2",";logQ2;Event Rate per trigger",Q2bins,Q2min,Q2max},"logQ2");
+
+  QR_Q2  ->Scale(meanQRtrig/Nevents);
+  Brem_Q2->Scale(meanBrems/Nevents);
+
+  auto sum_Q2 = (TH1*)QR_Q2->Clone("Total_Q2");
+  sum_Q2->Add(QR_Q2.GetPtr(),Brem_Q2.GetPtr());
+
+  auto ratio_Q2 = (TH1*)QR_Q2->Clone("Total_Q2");
+  ratio_Q2->Divide(QR_Q2.GetPtr(),sum_Q2);
+
+  QR_Q2   ->SetLineColor(kRed);
+  Brem_Q2 ->SetLineColor(kBlue);
+  sum_Q2  ->SetLineColor(kGreen);
+
+  ratio_Q2->GetYaxis()->SetTitle("Signal Fration");
   
+  can2->cd(1);
+  gPad->SetLogy();
+  sum_Q2 ->Draw("hist");
+  QR_Q2  ->Draw("hist same");
+  Brem_Q2->Draw("hist same");
+
+  can2->cd(2);
+  ratio_Q2->Draw();
+
+  can2->SaveAs(outQ2Name);
+  can2->SaveAs(outQ2Namepng);
 
 }

@@ -194,9 +194,14 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/derek/x_5_100_16.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 // 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
-  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
-		       TString outName         = "/scratch/EIC/Analysis/temp.root",
-		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+
+//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
+// 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
+// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+ 
+void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_FrontWindow_*.edm4hep.root",
+		     TString outName         = "/scratch/EIC/Analysis/tempFrontWindow.root",
+		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
@@ -395,8 +400,8 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("real_time",         "TaggerTrackerHits.time")
      .Define("real_EDep",         "TaggerTrackerHits.EDep")
      .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
-     .Define("vector_cut",        vector_cut,              {"real_position","real_vector"})
-     .Define("vector_filter",     vector_filter,           {"vector_cut"});
+     .Define("real_cut",          vector_cut,              {"real_position","real_vector"})
+     .Define("vector_filter",     vector_filter,           {"real_cut"});
 
    for(auto part: parts){
      std::string colName = part.fName;
@@ -462,6 +467,12 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("y24","yID[layerID==3&&moduleID==2]")
      .Define("Npix24","x24.size()");
 
+   // Specific variables for training network faster?
+
+//    d1 = d1.Define("real_cut_x")
+//      .Define("cosPhi","cos(phiV)")
+//      .Define("cosPhi","sin(phiV)");
+
    //[&](const std::vector<XYZVector>& vec){}
 
 //    d1 = d1.Define("fit_temp", fitPoints(3,1) , {"vector_cut","real_EDep","moduleID","layerID"})
@@ -476,13 +487,13 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","vector_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","real_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);
 
    d1.Snapshot("temp",outName,Out_Vec,opts);
-
+   //Filter("(Tag1_4||Tag2_4)&&iFilter").
 
    //Hits distribution/layer
    //Acceptance 

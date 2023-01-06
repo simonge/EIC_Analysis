@@ -71,10 +71,15 @@ void RunNetwork( TString myMethodList = "" )
    // Create a set of variables and declare them to the reader
    // - the variable names MUST corresponds in name and type to those given in the weight file(s) used
    Float_t yP, zP, xV, yV;
-   reader->AddVariable( "cell_cut[0].fY", &yP     );
-   reader->AddVariable( "cell_cut[0].fZ", &zP     );
-   reader->AddVariable( "cell_vector[0].fX",   &xV     );
-   reader->AddVariable( "cell_vector[0].fY",   &yV     );
+//    reader->AddVariable( "cell_cut[0].fCoordinates.fY",    &yP     );
+//    reader->AddVariable( "cell_cut[0].fCoordinates.fZ",    &zP     );
+//    reader->AddVariable( "cell_vector[0].fCoordinates.fX", &xV     );
+//    reader->AddVariable( "cell_vector[0].fCoordinates.fY", &yV     );
+
+   reader->AddVariable( "real_cut[0].fCoordinates.fY",    &yP     );
+   reader->AddVariable( "real_cut[0].fCoordinates.fZ",    &zP     );
+   reader->AddVariable( "real_vector[0].fCoordinates.fX", &xV     );
+   reader->AddVariable( "real_vector[0].fCoordinates.fY", &yV     );
  
    // Spectator variables declared in the training have to be added to the reader, too
    Float_t  eE, logQ2;
@@ -84,7 +89,11 @@ void RunNetwork( TString myMethodList = "" )
    // --- Book the MVA methods
  
    TString dir    = "dataset/weights/";
-   TString prefix = "TMVARegression";
+   TString prefix = "RealHits4layer";
+   TString tag    = "";
+   //   TString tag    = "FrontWindow";
+   //   TString prefix = "TMVARegression";
+   TString ofile = "Reg_point-"+prefix+tag+".root";
  
    TString methodName = "DNN_CPU";//it->first + " method";
    TString weightfile = dir + prefix + "_" + "DNN_CPU" + ".weights.xml";
@@ -96,14 +105,15 @@ void RunNetwork( TString myMethodList = "" )
    // in this example, there is a toy tree with signal and one with background events
    // we'll later on use only the "signal" events for the test in this example.
    //
-   TString fname = "/scratch/EIC/Analysis/temp.root";
+   TString fname = "/scratch/EIC/Analysis/temp"+tag+".root";
    ROOT::RDataFrame df("temp",fname);
  
    TStopwatch sw;
    sw.Start();
    
    auto df2 = df.Filter("(Tag1_4||Tag2_4)&&iFilter")
-     .Define("values",getPrediction(kl,&yP,&zP,&xV,&yV),{"cell_cut","cell_vector"})
+     //     .Define("values",getPrediction(kl,&yP,&zP,&xV,&yV),{"cell_cut","cell_vector"})
+     .Define("values",getPrediction(kl,&yP,&zP,&xV,&yV),{"real_cut","real_vector"})
      .Define("ePred","values[0]")
      .Define("tPred","values[1]")
      .Define("pPred","atan2(values[3],values[2])");
@@ -114,8 +124,6 @@ void RunNetwork( TString myMethodList = "" )
    auto phi    = df2.Histo2D({"phi",   "phi",   100,-TMath::Pi(),TMath::Pi(),100,-TMath::Pi(),TMath::Pi()}, "pPred","phiV");
       
    // --- Write histograms
- 
-   TString ofile = "TMVARegApp.root";
 
    TFile *target  = new TFile( ofile,"RECREATE" );
    

@@ -26,31 +26,23 @@ void TaggerRegression( TString myMethodList = "" )
    TString fname = "/scratch/EIC/Analysis/temp.root";
    //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
    //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
-
-   TString outfileName( "/scratch/EIC/Results/ML-Out/test_real_ETP.root" );
+   TString tag = "4layerP";
+   TString outfileName( "/scratch/EIC/Results/ML-Out/"+tag+"_real_ETP.root" );
 
     //---------------------------------------------------------------
    // This loads the library
    TMVA::Tools::Instance();
  
    ROOT::EnableImplicitMT(8);
- 
-   // Default MVA methods to be trained + tested
-   std::map<std::string,int> Use;
- 
-   // Neural Network
-   Use["DNN_CPU"]         = 1;
- 
+  
    // --------------------------------------------------------------------------------------------------
- 
-   // Here the preparation phase begins
- 
-   // Create a new root output file
+    // Here the preparation phase begins
+    // Create a new root output file
    TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
  
    // Create the factory object. Later you can choose the methods
-   TMVA::Factory *factory = new TMVA::Factory( "RealHits", outputFile,
-                                               "!V:!Silent:Color:DrawProgressBar:Transformations=I;G;N;N+G;P+N+G:AnalysisType=Regression" );
+   TMVA::Factory *factory = new TMVA::Factory( "RealHits"+tag, outputFile,
+                                               "!V:!Silent:Color:DrawProgressBar:AnalysisType=Regression" );
    //   TMVA::Factory *factory = new TMVA::Factory( "TMVARegression", outputFile,
    //                                               "!V:!Silent:Color:DrawProgressBar:Transformations=I;G;N;N+G;P+N+G:AnalysisType=Regression" );
  
@@ -66,21 +58,18 @@ void TaggerRegression( TString myMethodList = "" )
    // note that you may also use variable expressions, such as: "3*var1/var2*abs(var3)"
    // [all types of expressions that can also be parsed by TTree::Draw( "expression" )]
 
-   dataloader->AddVariable( "vector_cut[0].fY", "real_position_y", "units", 'F' );
-   dataloader->AddVariable( "vector_cut[0].fZ", "real_position_z", "units", 'F' );
 
-//    dataloader->AddVariable( "cell_cut[0].fY", "real_position_y", "units", 'F' );
-//    dataloader->AddVariable( "cell_cut[0].fZ", "real_position_z", "units", 'F' );
+   // Variables with cell binning
+   //    dataloader->AddVariable( "cell_cut[0].fY", "real_position_y", "units", 'F' );
+   //    dataloader->AddVariable( "cell_cut[0].fZ", "real_position_z", "units", 'F' );
+   //    dataloader->AddVariable( "cell_vector[0].fX", "real_vector.x", "units", 'F' );
+   //    dataloader->AddVariable( "cell_vector[0].fY", "real_vector.y", "units", 'F' );
 
-//    dataloader->AddVariable( "real_position[0].fX", "real_position_x", "units", 'F' );
-//    dataloader->AddVariable( "real_position[0].fY", "real_position_y", "units", 'F' );
-//    dataloader->AddVariable( "real_position[0].fZ", "real_position_z", "units", 'F' );
-
-//    dataloader->AddVariable( "cell_vector[0].fX", "real_vector.x", "units", 'F' );
-//    dataloader->AddVariable( "cell_vector[0].fY", "real_vector.y", "units", 'F' );
-
-   dataloader->AddVariable( "real_vector[0].fX", "real_vector.x", "units", 'F' );
-   dataloader->AddVariable( "real_vector[0].fY", "real_vector.y", "units", 'F' );
+   // Variables with no cell binning
+   dataloader->AddVariable( "real_cut[0].fCoordinates.fY",    "real_position_y", "units", 'F' );
+   dataloader->AddVariable( "real_cut[0].fCoordinates.fZ",    "real_position_z", "units", 'F' );
+   dataloader->AddVariable( "real_vector[0].fCoordinates.fX", "real_vector.x",   "units", 'F' );
+   dataloader->AddVariable( "real_vector[0].fCoordinates.fY", "real_vector.y",   "units", 'F' );
 
 
    //dataloader->AddVariable( "real_vector[0].fZ", "real_vector.z", "units", 'F' );
@@ -100,18 +89,10 @@ void TaggerRegression( TString myMethodList = "" )
   //    dataloader->AddSpectator( "spec2:=var1*3",  "Spectator 2", "units", 'F' );
   
   // Add the variable carrying the regression target
-  // dataloader->AddTarget( "Xpix11" );
-  //    dataloader->AddTarget( "Ypix11" );
   dataloader->AddTarget( "eE" );
   dataloader->AddTarget( "thetaE" );
   dataloader->AddTarget( "cos(phiV)" );
   dataloader->AddTarget( "sin(phiV)" );
-  //     dataloader->AddTarget( "qTheta" );
-  //dataloader->AddTarget( "logQ2" );
-  //dataloader->AddTarget( "logQ2" );
-  //    dataloader->AddTarget( "qx" );
-  //    dataloader->AddTarget( "qy" );
-  //    dataloader->AddTarget( "qz" );
  
 
    // It is also possible to declare additional targets for multi-dimensional regression, ie:
@@ -135,9 +116,8 @@ void TaggerRegression( TString myMethodList = "" )
    // Register the regression tree
  
    TTree *regTree1 = (TTree*)input->Get("temp");
-   //regTree1->SetEntries(4000000);
-//    TTree *regTree2 = (TTree*)input->Get("detector2");
- 
+   regTree1->SetEntries(2000000);
+
    // global event weights per tree (see below for setting event-wise weights)
    Double_t regWeight  = 1.0;
  
@@ -149,38 +129,33 @@ void TaggerRegression( TString myMethodList = "" )
    //dataloader->SetWeightExpression( "var1", "Regression" );
    // Apply additional cuts on the signal and background samples (can be different)
    TCut mycut = "(Tag1_4||Tag2_4)&&iFilter"; 
-   //TCut mycut = "Tag1_4"; 
-   //   TCut mycut = "eE<12 && eE>6.5 && Tag1_4"; 
+   //TCut mycut = ""; 
 //    dataloader->AddTree( regTree1, "Regression", regWeight,mycut );
  
    dataloader->PrepareTrainingAndTestTree(mycut,"nTrain_Regression=0:nTest_Regression=0:SplitMode=Random:NormMode=NumEvents:!V");
 
- 
-   if (Use["DNN_CPU"] or Use["DNN_GPU"]) {
- 
-     //     TString layoutString("Layout=TANH|200,TANH|100,TANH|100,LINEAR");
-     //     TString layoutString("Layout=TANH|50,TANH|30,TANH|20,TANH|20,LINEAR");
-     TString layoutString("Layout=TANH|1024,TANH|64,TANH|32,TANH|16,LINEAR");//USED
-     //TString layoutString("Layout=TANH|10240,TANH|16,TANH|16,LINEAR");
-     //     TString layoutString("Layout=TANH|1024,TANH|32,TANH|32,TANH|16,TANH|16,TANH|16,LINEAR");
-     //     TString layoutString("Layout=TANH|400,TANH|8,TANH|16,TANH|8,TANH|4,LINEAR");
-     // TString layoutString("Layout=LINEAR|6,TANH|6,LINEAR");
- 
- 
-      TString trainingStrategyString("TrainingStrategy=");
- 
-      trainingStrategyString +="LearningRate=1e-4,Momentum=0.01,DropConfig=0.0+0.0+0.0+0.0+0.0,ConvergenceSteps=1000,BatchSize=200,TestRepetitions=1,WeightDecay=0.0,Regularization=L2,Optimizer=Adam";
-      //      trainingStrategyString +="LearningRate=1e-3,Momentum=0.3,ConvergenceSteps=10,BatchSize=100,TestRepetitions=1,WeightDecay=0,Regularization=L2,Optimizer=Adam";
- 
-      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
-      //      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
-      nnOptions.Append(":");
-      nnOptions.Append(layoutString);
-      nnOptions.Append(":");
-      nnOptions.Append(trainingStrategyString);
- 
-      factory->BookMethod(dataloader, TMVA::Types::kDL, "DNN_CPU", nnOptions); // NN
-   }
+   //  TString layoutString("Layout=TANH|64,TANH|32,TANH|16,LINEAR");//USED 3layer
+   TString layoutString("Layout=TANH|200,TANH|200,TANH|100,TANH|50,LINEAR");//USED 1layer
+   //   TString layoutString("Layout=TANH|100,TANH|50,TANH|25,TANH|16,LINEAR");//USED 2layer
+   //   TString layoutString("Layout=TANH|64,TANH|32,TANH|32,LINEAR");//USED 2layer
+   //TString layoutString("Layout=TANH|1024,TANH|64,TANH|32,TANH|16,LINEAR");//USED 0.145751
+     
+   TString trainingStrategyString("TrainingStrategy=");
+   
+   //   trainingStrategyString +="LearningRate=1e-4,Momentum=0.01,MaxEpochs=4000,ConvergenceSteps=1000,BatchSize=50,TestRepetitions=1,Regularization=L2,Optimizer=Adam";
+   trainingStrategyString +="LearningRate=2e-4,Momentum=0.0,MaxEpochs=4000,ConvergenceSteps=200,BatchSize=200,TestRepetitions=5,Regularization=L2,Optimizer=Adam";
+   //   trainingStrategyString +="LearningRate=1e-4,Momentum=0.01,DropConfig=0.0+0.0+0.0+0.0+0.0,ConvergenceSteps=1000,BatchSize=200,TestRepetitions=1,WeightDecay=0.0,Regularization=L2,Optimizer=Adam";
+   //      trainingStrategyString +="LearningRate=1e-3,Momentum=0.3,ConvergenceSteps=10,BatchSize=100,TestRepetitions=1,WeightDecay=0,Regularization=L2,Optimizer=Adam";
+   
+   TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G,N(thetaE),P:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+   //   TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+   //      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+   nnOptions.Append(":");
+   nnOptions.Append(layoutString);
+   nnOptions.Append(":");
+   nnOptions.Append(trainingStrategyString);
+   
+   factory->BookMethod(dataloader, TMVA::Types::kDL, "DNN_CPU", nnOptions); // NN
 
    // --------------------------------------------------------------------------------------------------
  
