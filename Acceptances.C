@@ -15,10 +15,12 @@ std::vector<TString> fileNames = {"/scratch/EIC/Analysis/temp.root"};
 
 void Acceptances(){
 
-  TString outName      = "Acceptances.pdf";
-  TString outNamepng   = "Acceptances.png";
-  TString outName2     = "AcceptancesB.pdf";
-  TString outNamepng2  = "AcceptancesB.png";
+  TString outName      = "AcceptancesPipe.pdf";
+  TString outNamepng   = "AcceptancesPipe.png";
+  TString outName2     = "AcceptancesBPipe.pdf";
+  TString outNamepng2  = "AcceptancesBPipe.png";
+  TString outName3     = "AcceptancesCPipe.pdf";
+  TString outNamepng3  = "AcceptancesCPipe.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -54,13 +56,16 @@ void Acceptances(){
   double qMin = -9;
   double qMax = 0;
 
-  auto generated = df.Histo2D({"EQGen", "Generated Events;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2");
-  auto thetaCut  = df.Filter("iFilter").Histo2D({"EQTheta", "Events - Theta < 10 mrad;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2");
-  auto acceptedCut  = df.Filter("iFilter&&(Tag1_4||Tag2_4)").Histo2D({"EQaccepted", "Detector Hits;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2");
+  auto generated = df.Histo2D({"EQGen", "Generated Events;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2_3");
+  auto thetaCut  = df.Filter("iFilter").Histo2D({"EQTheta", "Events - Theta < 10 mrad;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2_3");
+  auto acceptedCut  = df.Filter("iFilter&&(Tag1_4||Tag2_4)").Histo2D({"EQaccepted", "Detector Hits;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2_3");
 
-  auto acceptedCut1  = df.Filter("iFilter&&Tag1_4").Histo2D({"EQaccepted", "Detector Hits Tagger 1;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2");
-  auto acceptedCut2  = df.Filter("iFilter&&Tag2_4").Histo2D({"EQaccepted", "Detector Hits Tagger 2;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2");
+  auto acceptedCut1  = df.Filter("iFilter&&Tag1_4").Histo2D({"EQaccepted", "Detector Hits Tagger 1;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2_3");
+  auto acceptedCut2  = df.Filter("iFilter&&Tag2_4").Histo2D({"EQaccepted", "Detector Hits Tagger 2;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2_3");
   
+
+  auto acceptedPhiRes  = df.Filter("iFilter&&(Tag1_4||Tag2_4)&&(TMath::Pi()-scatteredElectron.Theta())>0.001").Histo2D({"EQacceptedPhi", "Phi Resolvable;Electron Energy [GeV];Log(Q^{2})", eBins, eMin, eMax, qBins, qMin, qMax }, "eE","logQ2_3");
+
   can->cd(1);
   gPad->SetLogz();
   generated->Draw("colz");
@@ -108,5 +113,35 @@ void Acceptances(){
   
   can2->SaveAs(outName2);
   can2->SaveAs(outNamepng2);
+
+  gStyle->SetOptStat(0001);
+
+  TCanvas* can3 = new TCanvas("can3","can3",2400,800);
+  can3->Divide(4,1);
+  
+  can3->cd(1);
+  gPad->SetLogz();
+  generated->SetStats();
+  generated->Draw("colz");
+
+  can3->cd(2);
+  gPad->SetLogz();
+  thetaCut->SetStats();
+  thetaCut->Draw("colz");
+
+  can3->cd(3);
+  gPad->SetLogz();
+  acceptedCut->SetStats();
+  acceptedCut->Draw("colz");
+
+  can3->cd(4);
+  gPad->SetLogz();
+  acceptedPhiRes->SetStats();
+  acceptedPhiRes->Draw("colz");
+
+  
+  can3->SaveAs(outName3);
+  can3->SaveAs(outNamepng3);
+
 
 }

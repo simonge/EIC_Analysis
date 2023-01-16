@@ -182,6 +182,7 @@ struct partDetails{
   int genStatus;
 };
 
+//int beamID = 4;
 int beamID = 3;
 int simID  = 1;
 //int simID  = 1;
@@ -195,16 +196,21 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 // 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
 // 		       std::string compactName = "/home/simon/geant4/eic/ip6/eic_ip6.xml"){
 
-//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
-// 		       TString outName         = "/scratch/EIC/Analysis/temp.root",
-// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+// void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_1.edm4hep.root",
+// 		     TString outName         = "/scratch/EIC/Analysis/tempSmall.root",
+// 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+
+// void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
+// 		     TString outName         = "/scratch/EIC/Analysis/temp.root",
+// 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
  
-void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_FrontWindow_*.edm4hep.root",
-		     TString outName         = "/scratch/EIC/Analysis/tempFrontWindow.root",
-		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
-//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
-// 		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
-// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+// void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_FrontWindow_*.edm4hep.root",
+// 		     TString outName         = "/scratch/EIC/Analysis/tempFrontWindow.root",
+// 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+
+  void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
+		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
+		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_ReallyNoSolenoid_*.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/ReallyNoSolenoid.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
@@ -432,8 +438,12 @@ void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_bea
      .Define("thetaV", "scatteredV.theta()")
      .Define("phiV", "scatteredV.phi()")
      .Define("qE", "scatteredV.energy()")
-     .Define("Q2", "-scatteredV.M2()")
+     .Define("Q2", "2*beamElectron.energy()*eE*(1-cos(TMath::Pi()-scatteredElectron.theta()))")
      .Define("logQ2", "log10(Q2)")
+     .Define("Q2_2", "2*beamElectron.energy()*eE*(1-cos(thetaE))")
+     .Define("logQ2_2", "log10(Q2_2)")
+     .Define("Q2_3", "-scatteredV.M2()")
+     .Define("logQ2_3", "log10(Q2_3)")
      .Define("Tag1_1","Any(layerID==0&&moduleID==1)")
      .Define("Tag1_2","Tag1_1&&Any(layerID==1&&moduleID==1)")
      .Define("Tag1_3","Tag1_2&&Any(layerID==2&&moduleID==1)")
@@ -487,7 +497,7 @@ void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_bea
 
    
 
-   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","real_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
+   std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","real_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","logQ2_2","logQ2_3","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
 
    for(auto a:ID_Vec) Out_Vec.push_back(a);
    for(auto a:Part_Vec) Out_Vec.push_back(a);

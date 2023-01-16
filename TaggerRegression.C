@@ -12,6 +12,8 @@
 #include "TSystem.h"
 #include "TROOT.h"
  
+#include "TMVA/MethodDNN.h"
+#include "TMVA/Reader.h"
 #include "TMVA/Tools.h"
 #include "TMVA/Factory.h"
 #include "TMVA/DataLoader.h"
@@ -23,16 +25,21 @@ using namespace TMVA;
 void TaggerRegression( TString myMethodList = "" )
 {
 
-   TString fname = "/scratch/EIC/Analysis/temp.root";
-   //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
-   //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
-   TString tag = "4layerP";
-   TString outfileName( "/scratch/EIC/Results/ML-Out/"+tag+"_real_ETP.root" );
+  Bool_t loadWeights = 0;
 
-    //---------------------------------------------------------------
-   // This loads the library
-   TMVA::Tools::Instance();
- 
+  TString fname = "/scratch/EIC/Analysis/temp.root";
+  //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
+  //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
+  TString loadtag = "SomeGaus-NormE-Decor-3Layers";
+  TString tag = "Decor-NormE-3Layers-Bigger3";
+  //    TString vartag = "ETP";
+  TString vartag = "E";
+  TString outfileName( "/scratch/EIC/Results/ML-Out/"+tag+"_real_"+vartag+".root" );
+  
+  //---------------------------------------------------------------
+  // This loads the library
+  TMVA::Tools::Instance();
+  
    ROOT::EnableImplicitMT(8);
   
    // --------------------------------------------------------------------------------------------------
@@ -41,13 +48,25 @@ void TaggerRegression( TString myMethodList = "" )
    TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
  
    // Create the factory object. Later you can choose the methods
-   TMVA::Factory *factory = new TMVA::Factory( "RealHits"+tag, outputFile,
+//    TMVA::Factory *factory = new TMVA::Factory( "RealHits"+tag, outputFile,
+// 					       "!V:!Silent:Color:DrawProgressBar:Transformations=I;G;N;D;P;D,G;G,D;P,N,G;U,D,G:AnalysisType=Regression" );
+   TString typeName = "RealHits"+tag;
+   
+   TMVA::Factory *factory = new TMVA::Factory( typeName, outputFile,
                                                "!V:!Silent:Color:DrawProgressBar:AnalysisType=Regression" );
+
+
    //   TMVA::Factory *factory = new TMVA::Factory( "TMVARegression", outputFile,
    //                                               "!V:!Silent:Color:DrawProgressBar:Transformations=I;G;N;N+G;P+N+G:AnalysisType=Regression" );
  
- 
-   TMVA::DataLoader *dataloader=new TMVA::DataLoader("dataset");
+   TString dataFolderName = "dataset"; 
+   TMVA::DataLoader *dataloader=new TMVA::DataLoader(dataFolderName);
+
+   TString methodName = "DNN_CPU";
+   TString loadTypeName = "RealHits"+loadtag;
+   TString xmlFileName = dataFolderName+"/weights/"+loadTypeName+"_"+methodName+".weights.xml";
+
+   
    // If you wish to modify default settings
    // (please check "src/Config.h" to see all available global options)
    //
@@ -68,8 +87,8 @@ void TaggerRegression( TString myMethodList = "" )
    // Variables with no cell binning
    dataloader->AddVariable( "real_cut[0].fCoordinates.fY",    "real_position_y", "units", 'F' );
    dataloader->AddVariable( "real_cut[0].fCoordinates.fZ",    "real_position_z", "units", 'F' );
-   dataloader->AddVariable( "real_vector[0].fCoordinates.fX", "real_vector.x",   "units", 'F' );
-   dataloader->AddVariable( "real_vector[0].fCoordinates.fY", "real_vector.y",   "units", 'F' );
+   dataloader->AddVariable( "real_vector[0].fCoordinates.fX", "real_vector_x",   "units", 'F' );
+   dataloader->AddVariable( "real_vector[0].fCoordinates.fY", "real_vector_y",   "units", 'F' );
 
 
    //dataloader->AddVariable( "real_vector[0].fZ", "real_vector.z", "units", 'F' );
@@ -90,9 +109,9 @@ void TaggerRegression( TString myMethodList = "" )
   
   // Add the variable carrying the regression target
   dataloader->AddTarget( "eE" );
-  dataloader->AddTarget( "thetaE" );
-  dataloader->AddTarget( "cos(phiV)" );
-  dataloader->AddTarget( "sin(phiV)" );
+//   dataloader->AddTarget( "thetaE" );
+//   dataloader->AddTarget( "cos(phiV)" );
+//   dataloader->AddTarget( "sin(phiV)" );
  
 
    // It is also possible to declare additional targets for multi-dimensional regression, ie:
@@ -116,7 +135,8 @@ void TaggerRegression( TString myMethodList = "" )
    // Register the regression tree
  
    TTree *regTree1 = (TTree*)input->Get("temp");
-   regTree1->SetEntries(2000000);
+   //regTree1->SetEntries(800000);
+   //regTree1->SetEntries(2000000);
 
    // global event weights per tree (see below for setting event-wise weights)
    Double_t regWeight  = 1.0;
@@ -126,7 +146,7 @@ void TaggerRegression( TString myMethodList = "" )
  
    // This would set individual event weights (the variables defined in the
    // expression need to exist in the original TTree)
-   //dataloader->SetWeightExpression( "var1", "Regression" );
+   //dataloader->SetWeightExpression( "1/(eE)", "Regression" );
    // Apply additional cuts on the signal and background samples (can be different)
    TCut mycut = "(Tag1_4||Tag2_4)&&iFilter"; 
    //TCut mycut = ""; 
@@ -134,30 +154,56 @@ void TaggerRegression( TString myMethodList = "" )
  
    dataloader->PrepareTrainingAndTestTree(mycut,"nTrain_Regression=0:nTest_Regression=0:SplitMode=Random:NormMode=NumEvents:!V");
 
+   //   TString layoutString("Layout=TANH|200,TANH|50,LINEAR");
+   //   TString layoutString("Layout=TANH|200,TANH|40,LINEAR");
+   TString layoutString("Layout=TANH|200,TANH|4,TANH|4,LINEAR");
+   //Most transformation studies up to Decor-NormE-Small
+   //   TString layoutString("Layout=TANH|200,TANH|200,TANH|100,TANH|50,LINEAR");//USED 1layer
+
+
    //  TString layoutString("Layout=TANH|64,TANH|32,TANH|16,LINEAR");//USED 3layer
-   TString layoutString("Layout=TANH|200,TANH|200,TANH|100,TANH|50,LINEAR");//USED 1layer
+   //   TString layoutString("Layout=TANH|200,TANH|200,TANH|100,TANH|50,LINEAR");//USED 1layer
    //   TString layoutString("Layout=TANH|100,TANH|50,TANH|25,TANH|16,LINEAR");//USED 2layer
    //   TString layoutString("Layout=TANH|64,TANH|32,TANH|32,LINEAR");//USED 2layer
    //TString layoutString("Layout=TANH|1024,TANH|64,TANH|32,TANH|16,LINEAR");//USED 0.145751
      
    TString trainingStrategyString("TrainingStrategy=");
-   
+   trainingStrategyString +="LearningRate=2e-4,Momentum=0,MaxEpochs=10000,ConvergenceSteps=600,BatchSize=200,TestRepetitions=1,Regularization=None,Optimizer=Adam";   
+   //   trainingStrategyString +="LearningRate=2e-5,Momentum=0.1,MaxEpochs=4000,ConvergenceSteps=500,BatchSize=200,TestRepetitions=5,Regularization=L2,Optimizer=Adam";   
+
+   //Transformation tests
+   TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=D,N(eE):WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+   //   TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=,D,N(eE),G(real_position_z,real_vector_x):WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+
+   //Pre-Transformation tests
+   //TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G,N(thetaE),P:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
+
+
+
+
    //   trainingStrategyString +="LearningRate=1e-4,Momentum=0.01,MaxEpochs=4000,ConvergenceSteps=1000,BatchSize=50,TestRepetitions=1,Regularization=L2,Optimizer=Adam";
-   trainingStrategyString +="LearningRate=2e-4,Momentum=0.0,MaxEpochs=4000,ConvergenceSteps=200,BatchSize=200,TestRepetitions=5,Regularization=L2,Optimizer=Adam";
    //   trainingStrategyString +="LearningRate=1e-4,Momentum=0.01,DropConfig=0.0+0.0+0.0+0.0+0.0,ConvergenceSteps=1000,BatchSize=200,TestRepetitions=1,WeightDecay=0.0,Regularization=L2,Optimizer=Adam";
    //      trainingStrategyString +="LearningRate=1e-3,Momentum=0.3,ConvergenceSteps=10,BatchSize=100,TestRepetitions=1,WeightDecay=0,Regularization=L2,Optimizer=Adam";
    
-   TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G,N(thetaE),P:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
    //   TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
    //      TString nnOptions("!H:V:ErrorStrategy=SUMOFSQUARES:VarTransform=G+N:WeightInitialization=XAVIERUNIFORM:Architecture=GPU");
    nnOptions.Append(":");
    nnOptions.Append(layoutString);
    nnOptions.Append(":");
    nnOptions.Append(trainingStrategyString);
-   
-   factory->BookMethod(dataloader, TMVA::Types::kDL, "DNN_CPU", nnOptions); // NN
 
-   // --------------------------------------------------------------------------------------------------
+   TMVA::MethodDNN* method = (MethodDNN*)factory->BookMethod(dataloader, TMVA::Types::kDL, methodName, nnOptions); // NN
+
+   //std::istream xmlFile(xmlFileName);
+   if(loadWeights){
+     TMVA::Reader *reader = new TMVA::Reader( "!Color:!Silent" );
+     reader->BookMVA( methodName, xmlFileName);
+     TMVA::MethodDNN* kl = dynamic_cast<TMVA::MethodDNN*>(reader->FindMVA(methodName));
+     method = kl;
+   }
+   //     method->ReadWeightsFromXML(xmlFileName);
+   //factory->GetMethod(dataFolderName,methodName)->ReadWeightsFromXML(xmlFileName);
+     // --------------------------------------------------------------------------------------------------
  
    // Now you can tell the factory to train, test, and evaluate the MVAs
  

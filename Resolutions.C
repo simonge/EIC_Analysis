@@ -10,16 +10,20 @@ using namespace std;
 
 std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 
-std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-RealHits4layer.root"};
+std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-RealHits4layerJustPipe.root"};
+//std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_point-RealHits4layer.root"};
+//std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-RealHits4layer.root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/test_cell_ETP.root"};
 
 
 void Resolutions(){
 
-  TString outName  = "PTestResolutionsA.pdf";
-  TString outName2 = "PTestResolutionsB.pdf";
-//   TString outNamepng  = "Resolutions55A.png";
-//   TString outNamepng2 = "Resolutions55B.png";
+//   TString outName  = "PTestResolutionsA.pdf";
+//   TString outName2 = "PTestResolutionsB.pdf";
+//   TString outName  = "ResolutionsA-New.pdf";
+//   TString outName2 = "ResolutionsB-New.pdf";
+  TString outNamepng  = "ResolutionsA-JustPipe.png";
+  TString outNamepng2 = "ResolutionsB-JustPipe.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -47,20 +51,30 @@ void Resolutions(){
   TCanvas* can2 = new TCanvas("can2","can2",2200,1400);
   can2->Divide(3,2);
 
-  ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[0]);
+//   ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[1]);
 
   //Cheating
-  auto dfcheet_2 = dfcheet.Define("CalPhi","atan2(DNN_CPU.sin_phiV_,DNN_CPU.cos_phiV_)")
-    .Define("Phi","atan2(sin_phiV_,cos_phiV_)")
+//   auto dfcheet_2 = dfcheet.Define("CalPhi","atan2(DNN_CPU.sin_phiV_,DNN_CPU.cos_phiV_)")
+//     .Define("Phi","atan2(sin_phiV_,cos_phiV_)")
+//     .Define("PhiRes","(Phi-CalPhi)")
+//     .Define("ThetaGen","thetaE*1000")
+//     .Define("ThetaRecon","DNN_CPU.thetaE*1000")
+//     .Define("ThetaRes","(ThetaGen-ThetaRecon)")
+//     .Define("ePred","DNN_CPU.eE")
+//     .Define("ERes","100*(eE-DNN_CPU.eE)/eE");
+  ROOT::RDataFrame dfcheet("predict",fileNames[1]);
+
+  auto dfcheet_2 = dfcheet.Define("CalPhi","pPred")
+    .Define("Phi","phiV")
     .Define("PhiRes","(Phi-CalPhi)")
     .Define("ThetaGen","thetaE*1000")
-    .Define("ThetaRecon","DNN_CPU.thetaE*1000")
+    .Define("ThetaRecon","tPred*1000")
     .Define("ThetaRes","(ThetaGen-ThetaRecon)")
-    .Define("ERes","100*(eE-DNN_CPU.eE)/eE");
+    .Define("ERes","100*(eE-ePred)/eE");
 
   ROOT::RDataFrame df55("predict",fileNames[1]);
 
-  //Cheating
+  //Not Cheating
   auto df55_2 = df55.Define("CalPhi","pPred")
     .Define("Phi","phiV")
     .Define("PhiRes","(Phi-CalPhi)")
@@ -95,7 +109,7 @@ void Resolutions(){
 
   auto Phi2D    = dfcheet_2.Filter("ThetaGen>1").Histo2D({"Phi",    "Phi Reconstruction (Theta > 1 mrad);#phi gen [rad];#phi recon [rad]",      phiBins,   phiMin,   phiMax,   phiBins,   phiMin,   phiMax,  }, "Phi",   "CalPhi");
   auto Theta2D  = dfcheet_2.Histo2D({"Theta",  "Theta Reconstruction;#theta gen [mrad] ;#theta recon [mrad]", thetaBins, thetaMin, thetaMax, thetaBins, thetaMin, thetaMax }, "ThetaGen","ThetaRecon");
-  auto Energy2D = dfcheet_2.Histo2D({"Energy", "Energy Reconstruction;Energy gen [GeV] ;Energy recon [GeV]", eBins,     eMin,     eMax,     eBins,     eMin,     eMax     }, "eE",    "DNN_CPU.eE");
+  auto Energy2D = dfcheet_2.Histo2D({"Energy", "Energy Reconstruction;Energy gen [GeV] ;Energy recon [GeV]", eBins,     eMin,     eMax,     eBins,     eMin,     eMax     }, "eE",    "ePred");
 
   auto Phi2D2    = dfcheet_2.Filter("ThetaGen>1").Histo2D({"PRes", ";#phi gen-recon [rad];Electron energy [GeV] ",   resBins, -PResRange, PResRange, eBins, eMin, eMax },"PhiRes",  "eE");
   auto Theta2D2  = dfcheet_2.Histo2D({"TRes", ";#theta gen-recon [mrad];Electron energy [GeV] ", resBins, -TResRange, TResRange, eBins, eMin, eMax },"ThetaRes","eE");
@@ -145,8 +159,8 @@ void Resolutions(){
   Phi2D2.GetPtr()->Draw("colz");
   Phi2D2->SetStats(0);
   
-  can->SaveAs(outName2);
-//   can->SaveAs(outNamepng2);
+//   can->SaveAs(outName2);
+  can->SaveAs(outNamepng2);
 
   can->cd(1);
   gPad->SetLogz();
@@ -172,24 +186,24 @@ void Resolutions(){
   can->cd(4);
   ERes->Draw();
   ERes->Fit("gaus");
-  ERes55->Draw("same");
-  ERes55->Fit("gaus");
+//   ERes55->Draw("same");
+//   ERes55->Fit("gaus");
   ERes->SetStats(0);
   can->cd(5);
   TRes->Draw();
   TRes->Fit("gaus");
-  TRes55->Draw("same");
-  TRes55->Fit("gaus");
+//   TRes55->Draw("same");
+//   TRes55->Fit("gaus");
   TRes->SetStats(0);
   can->cd(6);
   PRes->Draw();
   PRes->Fit("gaus");
-  PRes55->Draw("same");
-  PRes55->Fit("gaus");
+//   PRes55->Draw("same");
+//   PRes55->Fit("gaus");
   PRes->SetStats(0);
   
-  can->SaveAs(outName);
-//   can->SaveAs(outNamepng);
+//   can->SaveAs(outName);
+  can->SaveAs(outNamepng);
 
 
 }
