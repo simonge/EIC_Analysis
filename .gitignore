@@ -1,0 +1,10 @@
+plots
+dataset
+*.root
+*.png
+*.pdf
+*.d
+*.h
+*.pcm
+*~
+*.so
