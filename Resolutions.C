@@ -10,7 +10,9 @@ using namespace std;
 
 std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 
-std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-RealHits4layerJustPipe.root"};
+std::string tag = "Decor-NormTE-4Layers-Bigger-4STEP5";
+
+std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-"+tag+".root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_point-RealHits4layer.root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-RealHits4layer.root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/test_cell_ETP.root"};
@@ -22,8 +24,10 @@ void Resolutions(){
 //   TString outName2 = "PTestResolutionsB.pdf";
 //   TString outName  = "ResolutionsA-New.pdf";
 //   TString outName2 = "ResolutionsB-New.pdf";
-  TString outNamepng  = "ResolutionsA-JustPipe.png";
-  TString outNamepng2 = "ResolutionsB-JustPipe.png";
+//   TString outNamepng  = "ResolutionsA-JustPipe.png";
+//   TString outNamepng2 = "ResolutionsB-JustPipe.png";
+  TString outNamepng  = "ETPResolutionsA-"+tag+".png";
+  TString outNamepng2 = "ETPResolutionsB-"+tag+".png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -51,9 +55,9 @@ void Resolutions(){
   TCanvas* can2 = new TCanvas("can2","can2",2200,1400);
   can2->Divide(3,2);
 
-//   ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[1]);
+//   ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[0]);
 
-  //Cheating
+//   //Cheating
 //   auto dfcheet_2 = dfcheet.Define("CalPhi","atan2(DNN_CPU.sin_phiV_,DNN_CPU.cos_phiV_)")
 //     .Define("Phi","atan2(sin_phiV_,cos_phiV_)")
 //     .Define("PhiRes","(Phi-CalPhi)")

@@ -31,9 +31,10 @@ void TaggerRegression( TString myMethodList = "" )
   //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
   //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
   TString loadtag = "SomeGaus-NormE-Decor-3Layers";
-  TString tag = "Decor-NormE-3Layers-Bigger3";
-  //    TString vartag = "ETP";
-  TString vartag = "E";
+  TString tag = "Decor-NormTE-4Layers-Bigger-4STEP5";
+  TString vartag = "ET";
+  //  TString vartag = "ETP";
+  //TString vartag = "E";
   TString outfileName( "/scratch/EIC/Results/ML-Out/"+tag+"_real_"+vartag+".root" );
   
   //---------------------------------------------------------------
@@ -102,14 +103,14 @@ void TaggerRegression( TString myMethodList = "" )
    // input variables, the response values of all trained MVAs, and the spectator variables
   dataloader->AddSpectator( "eE" );
   dataloader->AddSpectator( "logQ2" );
-//   dataloader->AddSpectator( "qPhi" );
-//   dataloader->AddSpectator( "qTheta" );
+//   dataloader->AddSpectator( "phiV" );
+//   dataloader->AddSpectator( "thetaE" );
   //    dataloader->AddSpectator( "logQ2",  "Spectator 1", "units", 'F' );
   //    dataloader->AddSpectator( "spec2:=var1*3",  "Spectator 2", "units", 'F' );
   
   // Add the variable carrying the regression target
   dataloader->AddTarget( "eE" );
-//   dataloader->AddTarget( "thetaE" );
+  dataloader->AddTarget( "log(thetaE)" );
 //   dataloader->AddTarget( "cos(phiV)" );
 //   dataloader->AddTarget( "sin(phiV)" );
  
@@ -156,7 +157,8 @@ void TaggerRegression( TString myMethodList = "" )
 
    //   TString layoutString("Layout=TANH|200,TANH|50,LINEAR");
    //   TString layoutString("Layout=TANH|200,TANH|40,LINEAR");
-   TString layoutString("Layout=TANH|200,TANH|4,TANH|4,LINEAR");
+   //   TString layoutString("Layout=TANH|100,TANH|40,TANH|40,TANH|20,LINEAR");
+   TString layoutString("Layout=TANH|1024,TANH|64,TANH|64,TANH|32,LINEAR");
    //Most transformation studies up to Decor-NormE-Small
    //   TString layoutString("Layout=TANH|200,TANH|200,TANH|100,TANH|50,LINEAR");//USED 1layer
 
@@ -168,7 +170,7 @@ void TaggerRegression( TString myMethodList = "" )
    //TString layoutString("Layout=TANH|1024,TANH|64,TANH|32,TANH|16,LINEAR");//USED 0.145751
      
    TString trainingStrategyString("TrainingStrategy=");
-   trainingStrategyString +="LearningRate=2e-4,Momentum=0,MaxEpochs=10000,ConvergenceSteps=600,BatchSize=200,TestRepetitions=1,Regularization=None,Optimizer=Adam";   
+   trainingStrategyString +="LearningRate=1e-4,Momentum=0,MaxEpochs=2000,ConvergenceSteps=50,BatchSize=1024,TestRepetitions=1,Regularization=None,Optimizer=ADAM|LearningRate=1e-6,Momentum=0,MaxEpochs=2000,ConvergenceSteps=50,BatchSize=1024,TestRepetitions=1,Regularization=None,Optimizer=ADAGRAD|LearningRate=1e-7,Momentum=0,MaxEpochs=2000,ConvergenceSteps=50,BatchSize=1024,TestRepetitions=1,Regularization=None,Optimizer=ADAM|LearningRate=1e-8,Momentum=0,MaxEpochs=2000,ConvergenceSteps=50,BatchSize=1024,TestRepetitions=1,Regularization=None,Optimizer=ADAM";   
    //   trainingStrategyString +="LearningRate=2e-5,Momentum=0.1,MaxEpochs=4000,ConvergenceSteps=500,BatchSize=200,TestRepetitions=5,Regularization=L2,Optimizer=Adam";   
 
    //Transformation tests

@@ -38,11 +38,16 @@ struct track{
   XYZVector pos;
   XYZVector vec;
   double    chi2;
+  ROOT::VecOps::RVec<int> clusters;
 };
 
 using RVecT = ROOT::VecOps::RVec<track>;
 
   
+   //int beamID = 4;
+   int beamID = 3;
+   int simID  = 1;
+   //int simID  = 1;   
 //-----------------------------------------------------------------------------------------
 // Grab Component functor
 //-----------------------------------------------------------------------------------------
@@ -102,40 +107,47 @@ private:
 // Linear fit functor
 //-----------------------------------------------------------------------------------------
 struct fitPoints{
-  fitPoints(ulong nLayers,ulong nModules): maxLayer(nLayers), maxModules(nModules) { }
+  fitPoints(ulong nLayers,ulong nModules,ROOT::VecOps::RVec<double> weight): maxLayer(nLayers), maxModules(nModules) {SetLayerWeights(weight); }
   
   RVecT operator()(const std::vector<XYZVector>& positions, const ROOT::VecOps::RVec<int>& moduleID, const ROOT::VecOps::RVec<int>& layerID) {
     
     RVecT outTracks;
     if(positions.size()<maxLayer) return outTracks;
-//     if(positions.size()>maxLayer*2) return outTracks;
+//     if(positions.size()>maxLayer*3) return outTracks;
 
-    TLinearFitter* lf = new TLinearFitter(2);
-    lf->SetFormula( "1++x[0]++x[1]");
+    ROOT::VecOps::RVec<int>  indeces  (positions.size());
+    for(ulong i = 0; i<indeces.size(); i++)
+      indeces[i] = i;
+
     
     auto rPositions = ROOT::VecOps::RVec<XYZVector>(positions);
     
     for(ulong module=1; module<=maxModules; module++){
       auto modHits = rPositions[moduleID==module];
       if(modHits.size()<maxLayer) continue;
-      auto modHitLay = layerID[moduleID==module];
+      if(modHits.size()>50) continue;
+      auto modHitLay  = layerID[moduleID==module];
+      auto modIndeces = indeces[moduleID==module];
       
       bool tryFit = true;
       ROOT::VecOps::RVec<ROOT::VecOps::RVec<XYZVector>> layerHits;
+      ROOT::VecOps::RVec<ROOT::VecOps::RVec<int>>       layerIndeces;
       for(ulong layer=0; layer<maxLayer; layer++){
 	auto layHit = modHits[modHitLay==layer];
+	auto layIndeces = modIndeces[modHitLay==layer];
 	if(!layHit.size()){
 	  tryFit=false;
 	  break;
 	}
 	layerHits.push_back(layHit);
+	layerIndeces.push_back(layIndeces);
       }      
       if(!tryFit) continue;
 
       ROOT::VecOps::RVec<double> x(maxLayer,0);
       ROOT::VecOps::RVec<double> y(maxLayer,0);
-      //ROOT::VecOps::RVec<double> v(2*maxLayer,0);
       ROOT::VecOps::RVec<double> z(maxLayer,0);
+      ROOT::VecOps::RVec<int> index(maxLayer,0);
 
       //Please try and neaten me up
       TMatrixD ma(3,1);
@@ -144,38 +156,38 @@ struct fitPoints{
       TMatrixD md(3,1);
                        
       //Need to somehow generalise number of layers... recursive is ugly?
+      int i=0;
       for(auto hit0: layerHits[0]){
-	x[0] = hit0.x();
-	y[0] = hit0.y();
-	z[0] = hit0.z();	
-// 	v[0] = hit0.x();
-// 	v[1] = hit0.y();
+	x[0] = hit0.x()*layerWeights[0];
+	y[0] = hit0.y()*layerWeights[0];
+	z[0] = hit0.z()*layerWeights[0];
+	index[0] = layerIndeces[0][i++];
+	int j=0;
 	for(auto hit1: layerHits[1]){
-	  x[1] = hit1.x();
-	  y[1] = hit1.y();
-	  z[1] = hit1.z();
-// 	  v[2] = hit1.x();
-// 	  v[3] = hit1.y();
+	  x[1] = hit1.x()*layerWeights[1];
+	  y[1] = hit1.y()*layerWeights[1];
+	  z[1] = hit1.z()*layerWeights[1];
+	  index[1] = layerIndeces[1][j++];
+	  int k=0;
 	  for(auto hit2: layerHits[2]){
-	    x[2] = hit2.x();
-	    y[2] = hit2.y();
-	    z[2] = hit2.z();
-// 	    v[4] = hit2.x();
-// 	    v[5] = hit2.y();
+	    x[2] = hit2.x()*layerWeights[2];
+	    y[2] = hit2.y()*layerWeights[2];
+	    z[2] = hit2.z()*layerWeights[2];
+	    index[2] = layerIndeces[2][k++];
+	    int l=0;
 	    for(auto hit3: layerHits[3]){
-	      x[3] = hit3.x();
-	      y[3] = hit3.y();
-	      z[3] = hit3.z();
-// 	      v[6] = hit3.x();
-// 	      v[7] = hit3.y();
+	      x[3] = hit3.x()*layerWeights[3];
+	      y[3] = hit3.y()*layerWeights[3];
+	      z[3] = hit3.z()*layerWeights[3];
+	      index[3] = layerIndeces[3][l++];
 
-	      XYZVector outPos = XYZVector(Mean(x),Mean(y),Mean(z));
+	      XYZVector outPos = XYZVector(Mean(x),Mean(y),Mean(z))/meanWeight;
 
 
-	      XYZPoint(hit0-outPos).GetCoordinates(ma.GetMatrixArray());
-	      XYZPoint(hit1-outPos).GetCoordinates(mb.GetMatrixArray());
-	      XYZPoint(hit2-outPos).GetCoordinates(mc.GetMatrixArray());
-	      XYZPoint(hit3-outPos).GetCoordinates(md.GetMatrixArray());
+	      XYZPoint((hit0-outPos)*layerWeights[0]).GetCoordinates(ma.GetMatrixArray());
+	      XYZPoint((hit1-outPos)*layerWeights[1]).GetCoordinates(mb.GetMatrixArray());
+	      XYZPoint((hit2-outPos)*layerWeights[2]).GetCoordinates(mc.GetMatrixArray());
+	      XYZPoint((hit3-outPos)*layerWeights[3]).GetCoordinates(md.GetMatrixArray());
 
 
 	      TMatrixD vecMatrix(3,4);
@@ -184,25 +196,21 @@ struct fitPoints{
 	      vecMatrix.SetSub(0,2,mc);
 	      vecMatrix.SetSub(0,3,md);
 	      
-	      vecMatrix.Print();
-
 	      TDecompSVD decomp(vecMatrix.T());
 	      
 	      decomp.Decompose();
-	      decomp.Print();
 
 	      
 	      auto decompVec = decomp.GetV().GetMatrixArray();
 	      
-	      auto varMatrix = vecMatrix*decomp.GetV();
-	      ROOT::VecOps::RVec<double> varArray;
-	      varArray.push_back(varMatrix[0]);
-	      varArray.push_back(varMatrix[4]);
-	      varArray.push_back(varMatrix[8]);
-	      varArray.push_back(varMatrix[12]);
-	      double normVar = StdDev(varArray);
-	      
-
+	      auto varMatrix = vecMatrix*(decomp.GetV());
+	      //varMatrix.Print();
+	      auto subMat = varMatrix.GetSub(0,3,1,2);
+// 	      subMat.Print();
+	      auto subAsArray  = subMat.GetMatrixArray();
+	      ROOT::VecOps::RVec<double> subAsVector(subAsArray,subAsArray+8);
+	      double outChi2 = Sum(subAsVector*subAsVector)/8;
+    
 
 // 	      lf->AssignData(maxLayer, 2, &v[0], &z[0]);  
 // 	      lf->Eval();
@@ -211,14 +219,14 @@ struct fitPoints{
 // 	      lf->GetParameters(params);
 // 	      params.Print();
 // 	      lf->GetErrors(errors);
- 	      double outChi2=1;
+ 	      //double outChi2=1;
 // 	      double outChi2=lf->GetChisquare();
 	      //	      XYZVector outVec = XYZVector(params[0],params[1],params[0]);
 	      XYZVector outVec = XYZVector(decompVec[0],decompVec[3],decompVec[6]);
-	      std::cout << outPos << std::endl;
-	      std::cout << outVec.Unit() << std::endl;
-	      std::cout << outChi2 << std::endl<< std::endl;	      
-	      track outTrack = {outPos,outVec.Unit(),outChi2};
+// 	      std::cout << outPos << std::endl;
+// 	      std::cout << outVec.Unit() << std::endl;
+// 	      std::cout << outChi2 << std::endl<< std::endl;	      
+	      track outTrack = {outPos,outVec.Unit(),outChi2,index};
 	      outTracks.push_back(outTrack);
 
 
@@ -226,73 +234,8 @@ struct fitPoints{
 	  }
 	}
       }
-      //NEED TO SET THE VARIABLES
     }
     
-
-
-
-
-//     XYZVector outVec;
-//     XYZVector outPos;
-//     double   outChi2 = 999999;
-    
-    
-
-//     ROOT::VecOps::RVec<double> x;
-//     ROOT::VecOps::RVec<double> y;
-//     ROOT::VecOps::RVec<double> z;
-
-//     for(uint i=0; i<positions.size(); i++){
-//       if(moduleID[i]!=module) continue;
-//       if(layerID[i]>maxLayer) continue;
-      
-// //       x.push_back(positions[i].x());
-// //       y.push_back(positions[i].y());
-//       x.push_back(positions[i].x());
-//       y.push_back(positions[i].y());
-//       z.push_back(positions[i].z());
-
-//     }    
-   
-//     if(e.size()>=2){
-         
-//       double totalWeight = Sum(e);
-//       double xMean = Sum(x*e)/totalWeight;
-//       double yMean = Sum(y*e)/totalWeight;
-//       double zMean = Sum(z*e)/totalWeight;
-//       outPos.SetXYZ(xMean,yMean,zMean);
-
-//       x -= xMean;
-//       y -= yMean;
-//       z -= zMean;
-      
-//       ROOT::VecOps::RVec<double> v;
-//       for(uint i=0; i<x.size(); i++){
-// 	v.push_back(x[i]);
-// 	v.push_back(y[i]);
-//       }
-
-
-//       lf->AssignData(v.size(), 2, &v[0], &z[0]);    
-//       lf->Eval();
-//       TVectorD params;
-// //       TVectorD errors;
-//       lf->GetParameters(params);
-// //       params.Print();
-// //       lf->GetErrors(errors);
-// //       errors.Print();
-//       outChi2=lf->GetChisquare();
-// //       cout << outChi2 << endl;
-//       outVec.SetXYZ(params[0],params[1],params[2]);
-// //       cout << lf->GetNpoints() <<endl;
-//       //outVec.Print();
-//       //(outVec.Unit()).Print();
-//     }
-    
-
-//     track = {outVec.Unit(),outChi2};
-
     return outTracks;
 
   };
@@ -302,11 +245,18 @@ struct fitPoints{
   void SetMaxLayers(ulong n){
     maxLayer = n;
   }
-  
-  
+  void SetLayerWeights(ROOT::VecOps::RVec<double> weights){
+    layerWeights = weights;
+    totalWeight  = Sum(layerWeights);
+    meanWeight   = Mean(layerWeights);
+  }
+    
 private: 
   ulong maxModules;
   ulong maxLayer;
+  ROOT::VecOps::RVec<double> layerWeights = {1,0.8,0.6,0.4};
+  double totalWeight = Sum(layerWeights);
+  double meanWeight  = Mean(layerWeights);
 };
   
 
@@ -317,12 +267,6 @@ struct partDetails{
   int genStatus;
 };
 
-//int beamID = 4;
-int beamID = 3;
-int simID  = 1;
-//int simID  = 1;
-
-std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,beamID},{"scatteredElectron",11,simID}};
 
 //-----------------------------------------------------------------------------------------
 // Main Analysis Call
@@ -335,8 +279,8 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 // 		     TString outName         = "/scratch/EIC/Analysis/tempSmall.root",
 // 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 
-// void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
-// 		     TString outName         = "/scratch/EIC/Analysis/temp.root",
+// void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_out_*.edm4hep.root",
+// 		     TString outName         = "/scratch/EIC/Analysis/tempClusterQR.root",
 // 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
  
 // void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_FrontWindow_*.edm4hep.root",
@@ -347,14 +291,18 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
 // 		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 
-  void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_1.edm4hep.root",
-		       TString outName         = "/scratch/EIC/Analysis/clusterTest.root",
+//   void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_1.edm4hep.root",
+// 		       TString outName         = "/scratch/EIC/Analysis/clusterSmall.root",
+// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+
+  void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/gen_uni_FrontWindow_*.edm4hep.root",
+		       TString outName         = "/scratch/EIC/Analysis/clusterLarge.root",
 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_ReallyNoSolenoid_*.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/ReallyNoSolenoid.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
   
-    // ROOT::EnableImplicitMT();
+    ROOT::EnableImplicitMT();
 
   using namespace ROOT::Math;
   using namespace std;
@@ -364,7 +312,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   t->Add(inName);
 
   ROOT::RDataFrame d0(*t, {"TaggerTrackerHits", "MCParticles"});
-  d0.Range(0,10000); // Limit events to analyse 
+  //d0.Range(0,10000); // Limit events to analyse 
 
   // -------------------------
   // Get the DD4hep instance
@@ -376,7 +324,7 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
   // -------------------------
 
   //--------------------------------------------------------------------------------------------
-  //Lambda Functions
+  // Lambda Functions
   //--------------------------------------------------------------------------------------------
   
   // -------------------------
@@ -610,14 +558,99 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     return clusterID;
   };
 
+  // -------------------------
+  // Cluster maxID
+  // -------------------------
+  auto cluster_maxID = [&](const ROOT::VecOps::RVec<int>  clusterNo, const ROOT::VecOps::RVec<int> detID) {
+    
+    ROOT::VecOps::RVec<int> clusterID;
+    
+    for(int index=0; index<=Max(clusterNo); index++){
+      auto filter = (index==clusterNo);
+      auto ID     = Max(detID[filter]);
+      clusterID.push_back(ID);
+    }    
+    return clusterID;
+  };
+
+  // -------------------------
+  // Cluster minID
+  // -------------------------
+  auto cluster_minID = [&](const ROOT::VecOps::RVec<int>  clusterNo, const ROOT::VecOps::RVec<int> detID) {
+    
+    ROOT::VecOps::RVec<int> clusterID;
+    
+    for(int index=0; index<=Max(clusterNo); index++){
+      auto filter = (index==clusterNo);
+      auto ID     = Min(detID[filter]);
+      clusterID.push_back(ID);
+    }    
+    return clusterID;
+  };
+
+  // -------------------------
+  // Cluster size
+  // -------------------------
+  auto cluster_size = [&](const ROOT::VecOps::RVec<int>  clusterNo) {
+    
+    ROOT::VecOps::RVec<int> clusterID;
+    
+    for(int index=0; index<=Max(clusterNo); index++){
+      auto filter = (index==clusterNo);
+      auto ID     = Sum(filter);
+      clusterID.push_back(ID);
+    }    
+    return clusterID;
+  };
+
+  // -------------------------
+  // track minID
+  // -------------------------
+  auto track_minID = [&](const std::vector<ROOT::VecOps::RVec<int>>  trackClusters, const ROOT::VecOps::RVec<int> clusterLim) {
+    
+    ROOT::VecOps::RVec<int> lim;
+    
+    for(auto clusters:trackClusters){
+      auto ID     = Min(Take(clusterLim,clusters));
+      lim.push_back(ID);
+    }    
+    return lim;
+  };
+  // -------------------------
+  // track maxID
+  // -------------------------
+  auto track_maxID = [&](const std::vector<ROOT::VecOps::RVec<int>>  trackClusters, const ROOT::VecOps::RVec<int> clusterLim) {
+    
+    ROOT::VecOps::RVec<int> lim;
+    
+    for(auto clusters:trackClusters){
+      auto ID     = Max(Take(clusterLim,clusters));
+      lim.push_back(ID);
+    }    
+    return lim;
+  };
+  // -------------------------
+  // track detID
+  // -------------------------
+  auto track_detID = [&](const std::vector<ROOT::VecOps::RVec<int>>  trackClusters, const ROOT::VecOps::RVec<int> clusterMod) {
+    
+    ROOT::VecOps::RVec<int> mod;
+    
+    for(auto clusters:trackClusters){
+      auto ID     = Take(clusterMod,clusters)[0];
+      mod.push_back(ID);
+    }    
+    return mod;
+  };
+
+  //----------------------------------------------------------------------------
+  // Fill Dataframes
+  //----------------------------------------------------------------------------
   
 
-  auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
-  std::vector<std::string> ID_Vec;
-  std::vector<std::string> Part_Vec;
-
-//       //Do some calculations
-//  auto d1 = d0.Define("Hit Filter",[](auto conts){
+   //-----------------------------------------
+   // Hits positions by real/cell positions
+   //-----------------------------------------
    auto d1 = d0.Define("nHits", "TaggerTrackerHits.size()")
      .Define("real_position",     real_position,           {"TaggerTrackerHits"})
      .Define("cell_position",     cell_position,           {"TaggerTrackerHits"})
@@ -626,34 +659,64 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
      .Define("real_vector",       real_vector,             {"TaggerTrackerHits"})
      .Define("real_cut",          vector_cut,              {"real_position","real_vector"})
      .Define("vector_filter",     vector_filter,           {"real_cut"});
-
+   
+   //-----------------------------------------
+   // Chosen Particles to save
+   //-----------------------------------------
+   std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,beamID},{"scatteredElectron",11,simID}};
+   std::vector<std::string> Part_Vec;
    for(auto part: parts){
      std::string colName = part.fName;
      Part_Vec.push_back(colName);
      d1 = d1.Define(colName,getParticle(part.genStatus,part.pdg),{"MCParticles"});
    }
 
+   //-----------------------------------------
+   // Hit detector IDs
+   //-----------------------------------------
+   auto ids = detector.readout("TaggerTrackerHits").idSpec().fields();
+   std::vector<std::string> ID_Vec;
    for(auto id: ids){
      std::string colName = id.first+"ID";
      ID_Vec.push_back(colName);
      d1 = d1.Define(colName,getSubID(id.first,detector),{"TaggerTrackerHits"});
    }
    
+   //-----------------------------------------
+   // Cluster Hits
+   //-----------------------------------------
+
    d1 = d1.Define("hitClusterNo",cluster_hits,{"moduleID","layerID","xID","yID","real_time","real_EDep"})
      .Define("clusterPos",cluster_position,{"hitClusterNo","real_EDep","cell_position"})
      .Define("clusterMod",cluster_detID,{"hitClusterNo","moduleID"})
      .Define("clusterLay",cluster_detID,{"hitClusterNo","layerID"})
+     .Define("clusterSize",cluster_size,{"hitClusterNo"})
+     .Define("clusterMinX",cluster_minID,{"hitClusterNo","xID"})
+     .Define("clusterMinY",cluster_minID,{"hitClusterNo","yID"})
+     .Define("clusterMaxX",cluster_maxID,{"hitClusterNo","xID"})
+     .Define("clusterMaxY",cluster_maxID,{"hitClusterNo","yID"})
      .Define("NHits","TaggerTrackerHits.size()")
      .Define("NClusters","Max(hitClusterNo)");
 
-   d1 = d1.Define("fit_temp", fitPoints(4,2) , {"clusterPos","clusterMod","clusterLay"})
+   std::vector<std::string> Cluster_Vec = {"NClusters","clusterPos","clusterSize","clusterMod","clusterLay"};
+
+   d1 = d1.Define("fit_temp", fitPoints(4,2,{1,0.8,0.7,0.6}) , {"clusterPos","clusterMod","clusterLay"})
      .Define("fit_position", [](RVecT tracks){std::vector<XYZVector> outvec; for(auto track:tracks) outvec.push_back(track.pos);  return outvec;},{"fit_temp"})
      .Define("fit_vector",   [](RVecT tracks){std::vector<XYZVector> outvec; for(auto track:tracks) outvec.push_back(track.vec);  return outvec;},{"fit_temp"})
      .Define("fit_chi2",     [](RVecT tracks){std::vector<double>    outvec; for(auto track:tracks) outvec.push_back(track.chi2); return outvec;},{"fit_temp"})
+     .Define("fit_clusters", [](RVecT tracks){std::vector<ROOT::VecOps::RVec<int>>    outvec; for(auto track:tracks) outvec.push_back(track.clusters); return outvec;},{"fit_temp"})
+     .Define("fit_minX", track_minID ,{"fit_clusters","clusterMinX"})
+     .Define("fit_maxX", track_maxID ,{"fit_clusters","clusterMaxX"})
+     .Define("fit_minY", track_minID ,{"fit_clusters","clusterMinY"})
+     .Define("fit_maxY", track_maxID ,{"fit_clusters","clusterMaxY"})
+     .Define("fit_module", track_detID ,{"fit_clusters","clusterMod"})
+     .Define("NTracks",    "fit_position.size()")
      .Define("fit_cut",      vector_cut,       {"fit_position","fit_vector"});
 
+   std::vector<std::string> Track_Vec = {"fit_position","fit_vector","fit_chi2","fit_cut","fit_minX","fit_maxX","fit_minY","fit_maxY","fit_module","NTracks"};
 
-   d1.Snapshot("clusters",outName,{"real_EDep","moduleID","layerID","xID","yID","real_time","hitClusterNo","NClusters","NHits","clusterPos","fit_position","fit_vector","fit_chi2","fit_cut"});
+
+//    d1.Snapshot("clusters",outName,{"real_EDep","moduleID","layerID","xID","yID","real_time","hitClusterNo","NClusters","NHits","clusterPos","fit_position","fit_vector","fit_chi2","fit_cut"});
 
 
    
@@ -724,17 +787,21 @@ std::vector<partDetails> parts = {{"beamElectron",11,beamID},{"beamProton",2212,
     ROOT::RDF::RSnapshotOptions opts;
     opts.fMode = "UPDATE";
     
-    d1.Snapshot("ids",outName,ID_Vec);
-    d1.Snapshot("parts",outName,Part_Vec,opts);
+//     d1.Snapshot("ids",outName,ID_Vec);
+//     d1.Snapshot("parts",outName,Part_Vec,opts);
 
    
 
-    std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","real_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","logQ2_2","logQ2_3","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24","hitClusterNo","NClusters","clusterPos","fit_position","fit_vector","fit_chi2","fit_cut"};//,"fit_vector","fit_chi2"};
+    std::vector<std::string> Out_Vec = {"vertex","nParticles","nHits","real_position","cell_position","cell_vector","cell_cut","real_vector","iFilter","real_cut","vector_filter","thetaV","thetaE","phiV","qE","eE","logQ2","logQ2_2","logQ2_3","Tag1_1","Tag1_2","Tag1_3","Tag1_4","Tag2_1","Tag2_2","Tag2_3","Tag2_4","x11","y11","x12","y12","x13","y13","x14","y14","x21","y21","x22","y22","x23","y23","x24","y24"};//,"fit_vector","fit_chi2"};
 
     for(auto a:ID_Vec) Out_Vec.push_back(a);
     for(auto a:Part_Vec) Out_Vec.push_back(a);
+    for(auto a:Cluster_Vec) Out_Vec.push_back(a);
+    for(auto a:Track_Vec) Out_Vec.push_back(a);
 
-    d1.Snapshot("temp",outName,Out_Vec,opts);
+
+    d1.Snapshot("temp",outName,Out_Vec);
+    //    d1.Snapshot("temp",outName,Out_Vec,opts);
 //    //Filter("(Tag1_4||Tag2_4)&&iFilter").
 
    //Hits distribution/layer
