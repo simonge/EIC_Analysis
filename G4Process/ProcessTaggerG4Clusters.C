@@ -125,7 +125,7 @@ struct fitPoints{
     for(ulong module=1; module<=maxModules; module++){
       auto modHits = rPositions[moduleID==module];
       if(modHits.size()<maxLayer) continue;
-      if(modHits.size()>50) continue;
+      if(modHits.size()>40) continue;
       auto modHitLay  = layerID[moduleID==module];
       auto modIndeces = indeces[moduleID==module];
       

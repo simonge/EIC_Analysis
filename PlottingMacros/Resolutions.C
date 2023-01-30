@@ -20,14 +20,14 @@ std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_ETP.
 
 void Resolutions(){
 
-//   TString outName  = "PTestResolutionsA.pdf";
-//   TString outName2 = "PTestResolutionsB.pdf";
-//   TString outName  = "ResolutionsA-New.pdf";
-//   TString outName2 = "ResolutionsB-New.pdf";
-//   TString outNamepng  = "ResolutionsA-JustPipe.png";
-//   TString outNamepng2 = "ResolutionsB-JustPipe.png";
-  TString outNamepng  = "ETPResolutionsA-"+tag+".png";
-  TString outNamepng2 = "ETPResolutionsB-"+tag+".png";
+//   TString outName  = "plots/PTestResolutionsA.pdf";
+//   TString outName2 = "plots/PTestResolutionsB.pdf";
+//   TString outName  = "plots/ResolutionsA-New.pdf";
+//   TString outName2 = "plots/ResolutionsB-New.pdf";
+//   TString outNamepng  = "plots/ResolutionsA-JustPipe.png";
+//   TString outNamepng2 = "plots/ResolutionsB-JustPipe.png";
+  TString outNamepng  = "plots/ETPResolutionsA-"+tag+".png";
+  TString outNamepng2 = "plots/ETPResolutionsB-"+tag+".png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -123,9 +123,9 @@ void Resolutions(){
   auto Theta3D  = dfcheet_2.Histo3D({"TRes", ";Electron energy [GeV] ;#theta [mrad]", eBins, eMin, eMax, thetaBins, thetaMin, thetaMax, resBins, -TResRange, TResRange }, "eE","ThetaGen","ThetaRes");
   auto Energy3D = dfcheet_2.Histo3D({"ERes", ";Electron energy [GeV] ;#theta [mrad]", eBins, eMin, eMax, thetaBins, thetaMin, thetaMax, resBins, -EResRange, EResRange }, "eE","ThetaGen","ERes");
 
-  (Phi3D.GetPtr())->FitSlicesZ();
-  (Theta3D.GetPtr())->FitSlicesZ();
-  (Energy3D.GetPtr())->FitSlicesZ();
+  (Phi3D.GetPtr())->FitSlicesZ("L");
+  (Theta3D.GetPtr())->FitSlicesZ("L");
+  (Energy3D.GetPtr())->FitSlicesZ("L");
 
   TH2D* phiSigma    = (TH2D*)(gDirectory->Get("PRes_2"));
   TH2D* thetaSigma  = (TH2D*)(gDirectory->Get("TRes_2"));

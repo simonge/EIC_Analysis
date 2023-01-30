@@ -16,10 +16,10 @@ std::vector<TString> fileNames = {"/scratch/EIC/Jarda/maps_basic_v1.root"};
 
 void ResolutionsJA(){
 
-  TString outName  = "JAResolutionsA2.pdf";
-  TString outName2 = "JAResolutionsB2.pdf";
-  TString outNamepng  = "JAResolutionsA2.png";
-  TString outNamepng2 = "JAResolutionsB2.png";
+  TString outName  = "plots/JAResolutionsA2.pdf";
+  TString outName2 = "plots/JAResolutionsB2.pdf";
+  TString outNamepng  = "plots/JAResolutionsA2.png";
+  TString outNamepng2 = "plots/JAResolutionsB2.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);

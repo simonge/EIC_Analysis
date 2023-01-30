@@ -15,7 +15,7 @@ std::vector<TString> fileNames = {"/scratch/EIC/Analysis/temp.root"};
 
 void Inputs(){
 
-  TString outNamepng   = "InputPos.png";
+  TString outNamepng   = "plots/InputPos.png";
 
 
   gStyle->SetStatW(0.3);

@@ -22,7 +22,7 @@ std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_E.ro
 void ResolutionsJustE(){
 
 //   TString outNamepng = "EResolutions-"+tag+".png";
-  TString outNamepng = "EResolutions-"+tag2+".png";
+  TString outNamepng = "plots/EResolutions-"+tag2+".png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);

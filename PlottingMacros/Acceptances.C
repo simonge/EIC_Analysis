@@ -15,12 +15,12 @@ std::vector<TString> fileNames = {"/scratch/EIC/Analysis/temp.root"};
 
 void Acceptances(){
 
-  TString outName      = "AcceptancesPipe.pdf";
-  TString outNamepng   = "AcceptancesPipe.png";
-  TString outName2     = "AcceptancesBPipe.pdf";
-  TString outNamepng2  = "AcceptancesBPipe.png";
-  TString outName3     = "AcceptancesCPipe.pdf";
-  TString outNamepng3  = "AcceptancesCPipe.png";
+  TString outName      = "plots/AcceptancesPipe.pdf";
+  TString outNamepng   = "plots/AcceptancesPipe.png";
+  TString outName2     = "plots/AcceptancesBPipe.pdf";
+  TString outNamepng2  = "plots/AcceptancesBPipe.png";
+  TString outName3     = "plots/AcceptancesCPipe.pdf";
+  TString outNamepng3  = "plots/AcceptancesCPipe.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);

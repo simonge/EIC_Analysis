@@ -16,7 +16,7 @@ std::vector<TString> fileNames = {"/scratch/EIC/Jarda/maps_basic_v1.root"};
 
 void BeamMonitor(){
 
-  TString outNamepng = "BeamPos.png";
+  TString outNamepng = "plots/BeamPos.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);

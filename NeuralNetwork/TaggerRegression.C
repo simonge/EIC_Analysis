@@ -27,12 +27,13 @@ void TaggerRegression( TString myMethodList = "" )
 
   Bool_t loadWeights = 0;
 
-  TString fname = "/scratch/EIC/Analysis/temp.root";
+  TString fname = "/scratch/EIC/Analysis/clusterLarge.root";
+  //  TString fname = "/scratch/EIC/Analysis/temp.root";
   //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
   //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
   TString loadtag = "SomeGaus-NormE-Decor-3Layers";
   TString tag = "Decor-NormTE-4Layers-Bigger-4STEP5";
-  TString vartag = "ET";
+  TString vartag = "P";
   //  TString vartag = "ETP";
   //TString vartag = "E";
   TString outfileName( "/scratch/EIC/Results/ML-Out/"+tag+"_real_"+vartag+".root" );
@@ -104,15 +105,15 @@ void TaggerRegression( TString myMethodList = "" )
   dataloader->AddSpectator( "eE" );
   dataloader->AddSpectator( "logQ2" );
 //   dataloader->AddSpectator( "phiV" );
-//   dataloader->AddSpectator( "thetaE" );
+  dataloader->AddSpectator( "thetaE" );
   //    dataloader->AddSpectator( "logQ2",  "Spectator 1", "units", 'F' );
   //    dataloader->AddSpectator( "spec2:=var1*3",  "Spectator 2", "units", 'F' );
   
   // Add the variable carrying the regression target
-  dataloader->AddTarget( "eE" );
-  dataloader->AddTarget( "log(thetaE)" );
-//   dataloader->AddTarget( "cos(phiV)" );
-//   dataloader->AddTarget( "sin(phiV)" );
+  // dataloader->AddTarget( "eE" );
+//   dataloader->AddTarget( "thetaE" );
+  dataloader->AddTarget( "cos(phiV)" );
+  dataloader->AddTarget( "sin(phiV)" );
  
 
    // It is also possible to declare additional targets for multi-dimensional regression, ie:
@@ -149,7 +150,7 @@ void TaggerRegression( TString myMethodList = "" )
    // expression need to exist in the original TTree)
    //dataloader->SetWeightExpression( "1/(eE)", "Regression" );
    // Apply additional cuts on the signal and background samples (can be different)
-   TCut mycut = "(Tag1_4||Tag2_4)&&iFilter"; 
+   TCut mycut = "NTracks>0&&iFilter"; 
    //TCut mycut = ""; 
 //    dataloader->AddTree( regTree1, "Regression", regWeight,mycut );
  

@@ -15,12 +15,12 @@ std::vector<TString> fileNames = {"/scratch/EIC/Analysis/temp.root","/scratch/EI
 
 void Rates(){
 
-  TString outName      = "Rates.pdf";
-  TString outNamepng   = "Rates.png";
-  TString outQ2Name    = "Q2Rates.pdf";
-  TString outQ2Namepng = "Q2Rates.png";
+  TString outName      = "plots/Rates.pdf";
+  TString outNamepng   = "plots/Rates.png";
+  TString outQ2Name    = "plots/Q2Rates.pdf";
+  TString outQ2Namepng = "plots/Q2Rates.png";
 
-  TString outColumnNamepng   = "ColumnRates.png";
+  TString outColumnNamepng   = "plots/ColumnRates.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);

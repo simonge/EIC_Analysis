@@ -16,8 +16,8 @@ std::vector<TString> fileNames = {"/scratch/EIC/Analysis/tempClusterQR.root"};
 
 void AcceptancesSizeVariation(){
 
-  TString outNamepng   = "AcceptancesSizeVariation.png";
-  TString outNamepng2   = "AcceptancesSizeVariation2.png";
+  TString outNamepng   = "plots/AcceptancesSizeVariation.png";
+  TString outNamepng2   = "plots/AcceptancesSizeVariation2.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
