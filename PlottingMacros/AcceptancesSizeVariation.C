@@ -10,14 +10,15 @@ using namespace std;
 
 std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 
-std::vector<TString> fileNames = {"/scratch/EIC/Analysis/tempClusterQR.root"};
+//std::vector<TString> fileNames = {"/scratch/EIC/Analysis/tempClusterQR.root"};
+std::vector<TString> fileNames = {"/scratch/EIC/Analysis/clusterFrontWindow.root"};
 
 //std::vector<TString> fileNames = {"/scratch/EIC/Analysis/clusterLarge.root"};
 
 void AcceptancesSizeVariation(){
 
-  TString outNamepng   = "plots/AcceptancesSizeVariation.png";
-  TString outNamepng2   = "plots/AcceptancesSizeVariation2.png";
+  TString outNamepng   = "plots/AcceptancesSizeVariationFrontWindow.png";
+  TString outNamepng2   = "plots/AcceptancesSizeVariationFrontWindow2.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -173,7 +174,7 @@ void AcceptancesSizeVariation(){
   can2->cd(9);
   eff2.SetMinimum(0);
   eff2.SetMarkerStyle(2);
-  eff2.Draw("AP");    
+  eff2.DrawClone("AP");    
 
 
   can2->SaveAs(outNamepng2);

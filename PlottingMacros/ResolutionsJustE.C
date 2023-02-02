@@ -10,19 +10,23 @@ using namespace std;
 
 std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 
-std::string tag = "Decor-NormTE-4Layers-Bigger-4STEP5";
+std::string tag = "FitTrain_uniform";
+//std::string tag = "Decor-NormTE-4Layers-Bigger-4STEP5";
 std::string tag2 = "cell-RealHitsDecor-NormE-4Layers-Bigger10-2STEP4FrontWindow";
 
-std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_E.root","/home/simon/Analysis/EIC_Analysis/Reg_"+tag2+".root"};
+std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_"+tag2+".root"};
+
+//std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_E.root","/home/simon/Analysis/EIC_Analysis/Reg_"+tag2+".root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_point-RealHits4layer.root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/4layer_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-RealHits4layer.root"};
+//std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/test_cell_ETP.root"};
 //std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/test_cell_ETP.root"};
 
 
 void ResolutionsJustE(){
 
 //   TString outNamepng = "EResolutions-"+tag+".png";
-  TString outNamepng = "plots/EResolutions-"+tag2+".png";
+  TString outNamepng = "plots/EResolutions-"+tag+".png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -44,21 +48,19 @@ void ResolutionsJustE(){
 
   gStyle->SetTitleOffset(1.0,"Y");
 
-  TCanvas* can = new TCanvas("can","can",2200,1400);
-  can->Divide(2,2);
 
 
-//   ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[0]);
+  ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[0]);
 
-//   //Cheating
-//   auto dfcheet_2 = dfcheet
-//     .Define("ePred","DNN_CPU.eE")
-//     .Define("ERes","100*(eE-ePred)/eE");
-
-  ROOT::RDataFrame dfcheet("predict",fileNames[1]);
-
+  //Cheating
   auto dfcheet_2 = dfcheet
+    .Define("ePred","DNN_CPU.eE")
     .Define("ERes","100*(eE-ePred)/eE");
+
+//   ROOT::RDataFrame dfcheet("predict",fileNames[1]);
+
+//   auto dfcheet_2 = dfcheet
+//     .Define("ERes","100*(eE-ePred)/eE");
 
 
 
@@ -83,6 +85,8 @@ void ResolutionsJustE(){
   TH1D* energySigma = (TH1D*)(gDirectory->Get("ERes_2"));
    
 
+  TCanvas* can = new TCanvas("can","can",2200,1400);
+  can->Divide(2,2);
   can->cd(1);
   energySigma->SetTitle("Energy Resolutions [%]");
   energySigma->SetStats(0);

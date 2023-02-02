@@ -9,6 +9,7 @@ R__LOAD_LIBRARY(libfmt.so)
 //#include <Vector4D.h>
 
 #include "ROOT/RDataFrame.hxx"
+#include "ROOT/RVec.hxx"
 #include "TCanvas.h"
 #include "TChain.h"
 #include "TF1.h"
@@ -283,26 +284,26 @@ struct partDetails{
 // 		     TString outName         = "/scratch/EIC/Analysis/tempClusterQR.root",
 // 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
  
-// void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_FrontWindow_*.edm4hep.root",
-// 		     TString outName         = "/scratch/EIC/Analysis/tempFrontWindow.root",
-// 		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+// void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_FrontWindow_*.edm4hep.root",
+// 			     TString outName         = "/scratch/EIC/Analysis/clusterFrontWindow.root",
+// 			     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 
-//   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
-// 		       TString outName         = "/scratch/EIC/Analysis/tempBrems.root",
-// 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_*.edm4hep.root",
+		     TString outName         = "/scratch/EIC/Analysis/tempClusterBrems.root",
+		     std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 
 //   void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/lgen_18x275_beam_out_1.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/clusterSmall.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 
-  void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/gen_uni_FrontWindow_*.edm4hep.root",
-		       TString outName         = "/scratch/EIC/Analysis/clusterLarge.root",
-		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
+//   void ProcessTaggerG4Clusters(TString inName          = "/scratch/EIC/G4out/gen_uni_FrontWindow_*.edm4hep.root",
+// 			       TString outName         = "/scratch/EIC/Analysis/clusterLarge.root",
+// 			       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
 //   void ProcessTaggerG4(TString inName          = "/scratch/EIC/G4out/qr_18x275_beam_ReallyNoSolenoid_*.edm4hep.root",
 // 		       TString outName         = "/scratch/EIC/Analysis/ReallyNoSolenoid.root",
 // 		       std::string compactName = "/home/simon/EIC/epic/epic_ip6.xml"){
   
-    ROOT::EnableImplicitMT();
+//    ROOT::EnableImplicitMT();
 
   using namespace ROOT::Math;
   using namespace std;
@@ -703,7 +704,7 @@ struct partDetails{
    d1 = d1.Define("fit_temp", fitPoints(4,2,{1,0.8,0.7,0.6}) , {"clusterPos","clusterMod","clusterLay"})
      .Define("fit_position", [](RVecT tracks){std::vector<XYZVector> outvec; for(auto track:tracks) outvec.push_back(track.pos);  return outvec;},{"fit_temp"})
      .Define("fit_vector",   [](RVecT tracks){std::vector<XYZVector> outvec; for(auto track:tracks) outvec.push_back(track.vec);  return outvec;},{"fit_temp"})
-     .Define("fit_chi2",     [](RVecT tracks){std::vector<double>    outvec; for(auto track:tracks) outvec.push_back(track.chi2); return outvec;},{"fit_temp"})
+     .Define("fit_chi2",     [](RVecT tracks){ROOT::VecOps::RVec<double>    outvec; for(auto track:tracks) outvec.push_back(track.chi2); return outvec;},{"fit_temp"})
      .Define("fit_clusters", [](RVecT tracks){std::vector<ROOT::VecOps::RVec<int>>    outvec; for(auto track:tracks) outvec.push_back(track.clusters); return outvec;},{"fit_temp"})
      .Define("fit_minX", track_minID ,{"fit_clusters","clusterMinX"})
      .Define("fit_maxX", track_maxID ,{"fit_clusters","clusterMaxX"})
@@ -714,6 +715,21 @@ struct partDetails{
      .Define("fit_cut",      vector_cut,       {"fit_position","fit_vector"});
 
    std::vector<std::string> Track_Vec = {"fit_position","fit_vector","fit_chi2","fit_cut","fit_minX","fit_maxX","fit_minY","fit_maxY","fit_module","NTracks"};
+
+//    d1 = d1.Define("fit_temp2", fitPoints(4,2,{1,1,1,1}) , {"clusterPos","clusterMod","clusterLay"})
+//      .Define("fit_position2", [](RVecT tracks){std::vector<XYZVector> outvec; for(auto track:tracks) outvec.push_back(track.pos);  return outvec;},{"fit_temp2"})
+//      .Define("fit_vector2",   [](RVecT tracks){std::vector<XYZVector> outvec; for(auto track:tracks) outvec.push_back(track.vec);  return outvec;},{"fit_temp2"})
+//      .Define("fit_chi22",     [](RVecT tracks){std::vector<double>    outvec; for(auto track:tracks) outvec.push_back(track.chi2); return outvec;},{"fit_temp2"})
+//      .Define("fit_clusters2", [](RVecT tracks){std::vector<ROOT::VecOps::RVec<int>>    outvec; for(auto track:tracks) outvec.push_back(track.clusters); return outvec;},{"fit_temp2"})
+//      .Define("fit_minX2", track_minID ,{"fit_clusters2","clusterMinX"})
+//      .Define("fit_maxX2", track_maxID ,{"fit_clusters2","clusterMaxX"})
+//      .Define("fit_minY2", track_minID ,{"fit_clusters2","clusterMinY"})
+//      .Define("fit_maxY2", track_maxID ,{"fit_clusters2","clusterMaxY"})
+//      .Define("fit_module2", track_detID ,{"fit_clusters2","clusterMod"})
+//      .Define("NTracks2",    "fit_position2.size()")
+//      .Define("fit_cut2",      vector_cut,       {"fit_position2","fit_vector2"});
+
+//    std::vector<std::string> Track_Vec2 = {"fit_position2","fit_vector2","fit_chi22","fit_cut2","fit_minX2","fit_maxX2","fit_minY2","fit_maxY2","fit_module2","NTracks2"};
 
 
 //    d1.Snapshot("clusters",outName,{"real_EDep","moduleID","layerID","xID","yID","real_time","hitClusterNo","NClusters","NHits","clusterPos","fit_position","fit_vector","fit_chi2","fit_cut"});
@@ -737,11 +753,12 @@ struct partDetails{
      .Define("phiV", "scatteredV.phi()")
      .Define("qE", "scatteredV.energy()")
      .Define("Q2", "2*beamElectron.energy()*eE*(1-cos(TMath::Pi()-scatteredElectron.theta()))")
-     .Define("logQ2", "log10(Q2)")
+     .Define("logQ2_1", "log10(Q2)")
      .Define("Q2_2", "2*beamElectron.energy()*eE*(1-cos(thetaE))")
      .Define("logQ2_2", "log10(Q2_2)")
      .Define("Q2_3", "-scatteredV.M2()")
      .Define("logQ2_3", "log10(Q2_3)")
+     .Define("logQ2", "logQ2_3")
      .Define("Tag1_1","Any(layerID==0&&moduleID==1)")
      .Define("Tag1_2","Tag1_1&&Any(layerID==1&&moduleID==1)")
      .Define("Tag1_3","Tag1_2&&Any(layerID==2&&moduleID==1)")
@@ -798,11 +815,29 @@ struct partDetails{
     for(auto a:Part_Vec) Out_Vec.push_back(a);
     for(auto a:Cluster_Vec) Out_Vec.push_back(a);
     for(auto a:Track_Vec) Out_Vec.push_back(a);
+//     for(auto a:Track_Vec2) Out_Vec.push_back(a);
 
 
     d1.Snapshot("temp",outName,Out_Vec);
-    //    d1.Snapshot("temp",outName,Out_Vec,opts);
-//    //Filter("(Tag1_4||Tag2_4)&&iFilter").
+    
+    auto dNN = d1.Filter("iFilter")
+      .Filter("fit_cut.size()>0")
+      .Define("indexMin","ROOT::VecOps::ArgMin(fit_chi2)") 
+      .Define("fit_minchi2","fit_chi2[indexMin]")
+      .Filter("fit_minchi2<0.01") 
+      .Define("Rposition","real_cut[0]") //Exact position
+      .Define("Rvector",  "real_vector[0]")
+      .Define("Cposition","cell_cut[0]") //Cell position
+      .Define("Cvector",  "cell_vector[0]") 
+      .Define("Fposition","fit_cut[indexMin]")  //Fitted position
+      .Define("Fvector","fit_vector[indexMin]")
+      .Define("cosPhi","cos(phiV)")
+      .Define("sinPhi","sin(phiV)");
+      
+    dNN.Snapshot("NNvars",outName,{"eE","phiV","cosPhi","sinPhi","thetaE","logQ2_3","Rposition","Rvector","Cposition","Cvector","Fposition","Fvector"},opts);
+    
+      //    d1.Snapshot("temp",outName,Out_Vec,opts);
+      //    //Filter("(Tag1_4||Tag2_4)&&iFilter").
 
    //Hits distribution/layer
    //Acceptance 

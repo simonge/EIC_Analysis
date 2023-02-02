@@ -22,17 +22,18 @@
  
 using namespace TMVA;
  
-void TaggerRegression( TString myMethodList = "" )
+void TaggerRegressionCluster( TString myMethodList = "" )
 {
 
   Bool_t loadWeights = 0;
 
-  TString fname = "/scratch/EIC/Analysis/clusterLarge.root";
+  //  TString fname = "/scratch/EIC/Analysis/clusterLarge.root";
+  TString fname = "/scratch/EIC/Analysis/tempClusterQRTrain.root";
   //  TString fname = "/scratch/EIC/Analysis/temp.root";
   //   TString fname = "/scratch/EIC/Analysis/FP_Tagger_Test_events3.root";
   //   TString outfileName( "/scratch/EIC/Results/ML-Out/test_cell_ETP.root" );
   TString loadtag = "SomeGaus-NormE-Decor-3Layers";
-  TString tag = "Decor-NormTE-4Layers-Bigger-4STEP5";
+  TString tag = "FitTrain";
   //  TString vartag = "P";
   TString vartag = "ETP";
   //TString vartag = "E";
@@ -87,10 +88,16 @@ void TaggerRegression( TString myMethodList = "" )
    //    dataloader->AddVariable( "cell_vector[0].fY", "real_vector.y", "units", 'F' );
 
    // Variables with no cell binning
-   dataloader->AddVariable( "real_cut[0].fCoordinates.fY",    "real_position_y", "units", 'F' );
-   dataloader->AddVariable( "real_cut[0].fCoordinates.fZ",    "real_position_z", "units", 'F' );
-   dataloader->AddVariable( "real_vector[0].fCoordinates.fX", "real_vector_x",   "units", 'F' );
-   dataloader->AddVariable( "real_vector[0].fCoordinates.fY", "real_vector_y",   "units", 'F' );
+//    dataloader->AddVariable( "real_cut[0].fCoordinates.fY",    "real_position_y", "units", 'F' );
+//    dataloader->AddVariable( "real_cut[0].fCoordinates.fZ",    "real_position_z", "units", 'F' );
+//    dataloader->AddVariable( "real_vector[0].fCoordinates.fX", "real_vector_x",   "units", 'F' );
+//    dataloader->AddVariable( "real_vector[0].fCoordinates.fY", "real_vector_y",   "units", 'F' );
+   
+   // Variables with vector fit
+   dataloader->AddVariable( "Fposition.fCoordinates.fY",    "fit_position_y", "units", 'F' );
+   dataloader->AddVariable( "Fposition.fCoordinates.fZ",    "fit_position_z", "units", 'F' );
+   dataloader->AddVariable( "Fvector.fCoordinates.fX", "fit_vector_x",   "units", 'F' );
+   dataloader->AddVariable( "Fvector.fCoordinates.fY", "fit_vector_y",   "units", 'F' );
 
 
    //dataloader->AddVariable( "real_vector[0].fZ", "real_vector.z", "units", 'F' );
@@ -103,7 +110,7 @@ void TaggerRegression( TString myMethodList = "" )
    // but will appear in the final "TestTree" produced by TMVA. This TestTree will contain the
    // input variables, the response values of all trained MVAs, and the spectator variables
   dataloader->AddSpectator( "eE" );
-  dataloader->AddSpectator( "logQ2" );
+  dataloader->AddSpectator( "logQ2_3" );
   dataloader->AddSpectator( "phiV" );
   dataloader->AddSpectator( "thetaE" );
   //    dataloader->AddSpectator( "logQ2",  "Spectator 1", "units", 'F' );
@@ -112,8 +119,8 @@ void TaggerRegression( TString myMethodList = "" )
   // Add the variable carrying the regression target
   dataloader->AddTarget( "eE" );
   dataloader->AddTarget( "thetaE" );
-  dataloader->AddTarget( "cos(phiV)" );
-  dataloader->AddTarget( "sin(phiV)" );
+  dataloader->AddTarget( "cosPhi" );
+  dataloader->AddTarget( "sinPhi" );
  
 
    // It is also possible to declare additional targets for multi-dimensional regression, ie:
@@ -136,7 +143,7 @@ void TaggerRegression( TString myMethodList = "" )
  
    // Register the regression tree
  
-   TTree *regTree1 = (TTree*)input->Get("temp");
+   TTree *regTree1 = (TTree*)input->Get("NNvars");
    //regTree1->SetEntries(800000);
    //regTree1->SetEntries(2000000);
 
@@ -150,7 +157,7 @@ void TaggerRegression( TString myMethodList = "" )
    // expression need to exist in the original TTree)
    //dataloader->SetWeightExpression( "1/(eE)", "Regression" );
    // Apply additional cuts on the signal and background samples (can be different)
-   TCut mycut = "NTracks>0&&iFilter"; 
+   TCut mycut = ""; 
    //TCut mycut = ""; 
 //    dataloader->AddTree( regTree1, "Regression", regWeight,mycut );
  
@@ -244,6 +251,6 @@ int main( int argc, char** argv )
       if (!methodList.IsNull()) methodList += TString(",");
       methodList += regMethod;
    }
-   TaggerRegression(methodList);
+   TaggerRegressionCluster(methodList);
    return 0;
 }

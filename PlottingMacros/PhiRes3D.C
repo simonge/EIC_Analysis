@@ -9,9 +9,11 @@
 
 using namespace std;
 
-std::string tag = "Decor-NormTE-4Layers-Bigger-4STEP4";
+//std::string tag = "Decor-NormTE-4Layers-Bigger-4STEP4";
+//std::string tag = "RealHits4layerclusterFrontWindow";
+std::string tag = "RealHits4layertempClusterQR";
 
-std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_ETP.root","/home/simon/Analysis/EIC_Analysis/Reg_cell-"+tag+".root"};
+std::vector<TString> fileNames = {"/scratch/EIC/Results/ML-Out/"+tag+"_real_ETP.root","/home/simon/Analysis/EIC_Analysis/NeuralNetwork/Reg_point-"+tag+".root"};
 
 // struct countRMS{
 //   ROOT::RDF::RResultPtr<unsigned long long> counts;
@@ -51,7 +53,13 @@ struct GetCounts2{
     auto HistProj = Hist->Projection(3);
     
     auto count = HistProj->GetEntries();
-    auto rms   = HistProj->GetStdDev();
+    double rms = 0;
+    if(count!=0){
+      TFitResultPtr r = HistProj->Fit("gaus","LS");
+      rms   = r->Parameter(2);
+      //auto rms   = HistProj->GetStdDev();
+    }
+    
     countRMS retVal = {count,rms};
     return retVal; 
   };
@@ -65,7 +73,7 @@ private:
 void PhiRes3D(){
   //ROOT::EnableImplicitMT();
 
-  TString outNamepng  = "plots/PResolutions-"+tag+".png";
+  TString outNamepng  = "plots/PEfficiencies3-"+tag+".png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -90,27 +98,38 @@ void PhiRes3D(){
   TCanvas* can = new TCanvas("can","can",2200,1000);
   can->Divide(4,2);
 
-  ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[0]);
+//   ROOT::RDataFrame dfcheet("dataset/TestTree",fileNames[0]);
 
-  //Cheating
-  auto dfcheet_2 = dfcheet.Define("CalPhi","atan2(DNN_CPU.sin_phiV_,DNN_CPU.cos_phiV_)*TMath::RadToDeg()")
-    .Define("Phi","atan2(sin_phiV_,cos_phiV_)*TMath::RadToDeg()")
-    .Define("PhiRes","(Phi-CalPhi)")
-    .Define("ThetaGen","thetaE*1000")
-    .Define("ThetaRecon","DNN_CPU.thetaE*1000")
-    .Define("ThetaRes","(ThetaGen-ThetaRecon)")
-    .Define("ePred","DNN_CPU.eE")
-    .Define("ERes","100*(eE-DNN_CPU.eE)/eE");
-
-//   ROOT::RDataFrame dfcheet("predict",fileNames[1]);
-
-//   auto dfcheet_2 = dfcheet.Define("CalPhi","pPred")
-//     .Define("Phi","phiV")
+//   //Cheating
+//   auto dfcheet_2 = dfcheet.Define("CalPhi","atan2(DNN_CPU.sin_phiV_,DNN_CPU.cos_phiV_)*TMath::RadToDeg()")
+//     .Define("Phi","atan2(sin_phiV_,cos_phiV_)*TMath::RadToDeg()")
 //     .Define("PhiRes","(Phi-CalPhi)")
 //     .Define("ThetaGen","thetaE*1000")
-//     .Define("ThetaRecon","tPred*1000")
+//     .Define("ThetaRecon","DNN_CPU.thetaE*1000")
 //     .Define("ThetaRes","(ThetaGen-ThetaRecon)")
-//     .Define("ERes","100*(eE-ePred)/eE");
+//     .Define("ePred","DNN_CPU.eE")
+//     .Define("ERes","100*(eE-DNN_CPU.eE)/eE");
+
+  ROOT::RDataFrame dfcheet("predict",fileNames[1]);
+
+  auto dfcheet_2 = dfcheet//.Filter("fit_minchi2<0.002")
+    .Define("Phi","phiV*TMath::RadToDeg()")
+    .Define("ThetaGen","thetaE*1000")
+    .Define("CalPhiR","pPredR*TMath::RadToDeg()")
+    .Define("PhiResR","(Phi-CalPhiR)")
+    .Define("ThetaReconR","tPredR*1000")
+    .Define("ThetaResR","(ThetaGen-ThetaReconR)")
+    .Define("EResR","100*(eE-ePredR)/eE")
+    .Define("CalPhiC","pPredC*TMath::RadToDeg()")
+    .Define("PhiResC","(Phi-CalPhiC)")
+    .Define("ThetaReconC","tPredC*1000")
+    .Define("ThetaResC","(ThetaGen-ThetaReconC)")
+    .Define("EResC","100*(eE-ePredC)/eE")
+    .Define("CalPhiF","pPredF*TMath::RadToDeg()")
+    .Define("PhiResF","(Phi-CalPhiF)")
+    .Define("ThetaReconF","tPredF*1000")
+    .Define("ThetaResF","(ThetaGen-ThetaReconF)")
+    .Define("EResF","100*(eE-ePredF)/eE");
 
   int    eBins     = 40;
   int    pBins     = 20;
@@ -132,13 +151,6 @@ void PhiRes3D(){
   double TResRange = 0.002*1000;
   double EResRange = 0.05*100;
 
-  auto Energy       = dfcheet_2.Histo1D({"TotalEnergy", ";#phi gen-recon [rad]", eBins, eMin, eMax }, "eE");
-  auto FilterEnergy = dfcheet_2.Filter("ThetaGen>1").Histo1D({"FilterEnergy", ";#phi gen-recon [rad]", eBins, eMin, eMax }, "eE");
-
-  auto Phi1D    = dfcheet_2.Filter("ThetaGen>1").Histo1D({"PRes", ";#phi gen-recon [rad]", resBins, -PResRange, PResRange }, "PhiRes");
-  auto Phi2D    = dfcheet_2.Filter("ThetaGen>1").Histo2D({"Phi",    "Phi Reconstruction (Theta > 1 mrad);#phi gen [rad];#phi recon [rad]",      pBins,   pMin,   pMax,   pBins,   pMin,   pMax,  }, "Phi",   "CalPhi");
-  auto Phi2D2   = dfcheet_2.Filter("ThetaGen>1").Histo2D({"PRes", ";#phi gen-recon [rad];Electron energy [GeV] ",   resBins, -PResRange, PResRange, eBins, eMin, eMax },"PhiRes",  "eE");
-
   const std::vector< int >    bins = {eBins,tBins,pBins,resBins};
   const std::vector< double > min  = {eMin,tMin,pMin,-PResRange};
   const std::vector< double > max  = {eMax,tMax,pMax, PResRange};
@@ -146,7 +158,9 @@ void PhiRes3D(){
   double pSize = (pMax-pMin)/pBins;
   double eSize = (eMax-eMin)/eBins;
  
-  auto Phi4D    = dfcheet_2.HistoND({"PRes", ";Electron energy [GeV] ;#theta [mrad]",4, bins,min,max }, {"eE","ThetaGen","Phi","PhiRes"});
+  auto Phi4DR    = dfcheet_2.HistoND({"PResR", ";Electron energy [GeV] ;#theta [mrad]",4, bins,min,max }, {"eE","ThetaGen","Phi","PhiResR"});
+  auto Phi4DC    = dfcheet_2.HistoND({"PResC", ";Electron energy [GeV] ;#theta [mrad]",4, bins,min,max }, {"eE","ThetaGen","Phi","PhiResC"});
+  auto Phi4DF    = dfcheet_2.HistoND({"PResF", ";Electron energy [GeV] ;#theta [mrad]",4, bins,min,max }, {"eE","ThetaGen","Phi","PhiResF"});
   
   int totalRows = eBins*tBins*pBins;
   ROOT::RDataFrame d(totalRows);
@@ -159,76 +173,87 @@ void PhiRes3D(){
     .Define("TMin",[&tMin,&tSize](ULong64_t i){return tMin+i*tSize+(tSize/2);},{"TBin"})
     .Define("PBin",[&pBins,&tBins,&eBins](ULong64_t i){return ((ULong64_t)(i/(eBins*tBins))%pBins);},{"rdfentry_"})
     .Define("PMin",[&pMin,&pSize](ULong64_t i){return pMin+i*pSize+(pSize/2);},{"PBin"})
-    .Define("CountsRMS",GetCounts2(Phi4D.GetPtr()),{"EBin","TBin","PBin"})
-    .Define("Counts","CountsRMS.counts")
-    .Define("RMS","CountsRMS.rms");
+    .Define("CountsRMSR",GetCounts2(Phi4DR.GetPtr()),{"EBin","TBin","PBin"})
+    .Define("Counts","CountsRMSR.counts")
+    .Define("RMSR","CountsRMSR.rms")
+    .Define("CountsRMSC",GetCounts2(Phi4DC.GetPtr()),{"EBin","TBin","PBin"})
+    .Define("RMSC","CountsRMSC.rms")
+    .Define("CountsRMSF",GetCounts2(Phi4DF.GetPtr()),{"EBin","TBin","PBin"})
+    .Define("RMSF","CountsRMSF.rms");
 
-  auto TotalCounts = d2.Histo1D({"TotalEnergyCounts", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
-  auto ReconCounts = d2.Filter("Counts>5&&RMS<30").Histo1D({"PhiReconEnergyCounts", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
+  auto TotalCounts  = d2.Histo1D({"TotalEnergyCountsR", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
+  auto ReconCountsR = d2.Filter("Counts>5&&RMSR<20").Histo1D({"PhiReconEnergyCountsR", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
+  auto ReconCountsC = d2.Filter("Counts>5&&RMSC<20").Histo1D({"PhiReconEnergyCountsC", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
+  auto ReconCountsF = d2.Filter("Counts>5&&RMSF<20").Histo1D({"PhiReconEnergyCountsF", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
 
   //Proper Efficiency
   TotalCounts->Sumw2(0);
-  ReconCounts->Sumw2(0);
   TotalCounts->Sumw2();
-  ReconCounts->Sumw2();
+  ReconCountsR->Sumw2(0);
+  ReconCountsR->Sumw2();
+  ReconCountsC->Sumw2(0);
+  ReconCountsC->Sumw2();
+  ReconCountsF->Sumw2(0);
+  ReconCountsF->Sumw2();
 
-  TH1D* efficiency = (TH1D*)ReconCounts->Clone("Efficiency");
-  efficiency->Divide(ReconCounts.GetPtr(),TotalCounts.GetPtr());
-  efficiency->SetTitle("Efficiencies");
+  TH1D* efficiencyR = (TH1D*)ReconCountsR->Clone("EfficiencyR");
+  efficiencyR->Divide(ReconCountsR.GetPtr(),TotalCounts.GetPtr());
+  efficiencyR->SetTitle("EfficienciesR");
+  TH1D* efficiencyC = (TH1D*)ReconCountsC->Clone("EfficiencyC");
+  efficiencyC->Divide(ReconCountsC.GetPtr(),TotalCounts.GetPtr());
+  efficiencyC->SetTitle("EfficienciesC");
+  TH1D* efficiencyF = (TH1D*)ReconCountsF->Clone("EfficiencyF");
+  efficiencyF->Divide(ReconCountsF.GetPtr(),TotalCounts.GetPtr());
+  efficiencyF->SetTitle("EfficienciesF");
 
-  can->cd(1);
-  efficiency->SetMinimum(0);
-  efficiency->SetMaximum(1);
-  efficiency->Draw();
-
-  //ThetaCut Efficiency
-  FilterEnergy->Sumw2(0);
-  Energy->Sumw2(0);
-  FilterEnergy->Sumw2();
-  Energy->Sumw2();
-
-  TH1D* efficiency2 = (TH1D*)FilterEnergy->Clone("Efficiency2");
-  efficiency2->Divide(FilterEnergy.GetPtr(),Energy.GetPtr());
-  efficiency2->SetTitle("Efficiencies2");
-
-  can->cd(2);
-  efficiency2->SetMinimum(0);
-  efficiency2->SetMaximum(1);
-  efficiency2->Draw();
-
-  can->cd(3);
-  gPad->SetLogz();
-  Phi2D2.GetPtr()->DrawClone("colz");
-  //  Phi2D2->SetStats(0);
   
   auto TotalCounts2D = d2.Histo2D({"TotalEnergyCounts", ";#Energy [GeV]", eBins, eMin, eMax, tBins, tMin, tMax },"EMin","TMin","Counts");
-  auto ReconCounts2D = d2.Filter("Counts>5&&RMS<30").Histo2D({"PhiReconEnergyCounts", ";#Energy [GeV]", eBins, eMin, eMax, tBins, tMin, tMax },"EMin","TMin","Counts");
+  auto ReconCounts2DR = d2.Filter("Counts>5&&RMSR<20").Histo2D({"PhiReconEnergyCountsR", ";#Energy [GeV]", eBins, eMin, eMax, tBins, tMin, tMax },"EMin","TMin","Counts");
+  auto ReconCounts2DC = d2.Filter("Counts>5&&RMSC<20").Histo2D({"PhiReconEnergyCountsC", ";#Energy [GeV]", eBins, eMin, eMax, tBins, tMin, tMax },"EMin","TMin","Counts");
+  auto ReconCounts2DF = d2.Filter("Counts>5&&RMSF<20").Histo2D({"PhiReconEnergyCountsF", ";#Energy [GeV]", eBins, eMin, eMax, tBins, tMin, tMax },"EMin","TMin","Counts");
    
-  TH1D* efficiency3 = (TH1D*)ReconCounts2D->Clone("Efficiency");
-  efficiency3->Divide(ReconCounts2D.GetPtr(),TotalCounts2D.GetPtr());
-  efficiency3->SetTitle("Efficiencies");
+  TH1D* efficiency3R = (TH1D*)ReconCounts2DR->Clone("EfficiencyR");
+  efficiency3R->Divide(ReconCounts2DR.GetPtr(),TotalCounts2D.GetPtr());
+  efficiency3R->SetTitle("EfficienciesR");
+  TH1D* efficiency3C = (TH1D*)ReconCounts2DC->Clone("EfficiencyC");
+  efficiency3C->Divide(ReconCounts2DC.GetPtr(),TotalCounts2D.GetPtr());
+  efficiency3C->SetTitle("EfficienciesC");
+  TH1D* efficiency3F = (TH1D*)ReconCounts2DF->Clone("EfficiencyF");
+  efficiency3F->Divide(ReconCounts2DF.GetPtr(),TotalCounts2D.GetPtr());
+  efficiency3F->SetTitle("EfficienciesF");
 
+  d2.Snapshot("rms","RMS2.root",{"EBin","TBin","PBin","EMin","TMin","PMin","Counts","RMSR","RMSC","RMSF"});
+   
+
+  can->cd(1);
+  efficiencyR->SetMinimum(0);
+  efficiencyR->SetMaximum(1);
+  efficiencyR->Draw("hist");
+  efficiencyC->SetLineColor(kRed);
+  efficiencyC->Draw("same hist");
+  efficiencyF->SetLineColor(kBlue);
+  efficiencyF->Draw("same hist");
+
+  can->cd(2);
+  gPad->SetLogz();
+  ReconCounts2DR->DrawClone("colz");
+  can->cd(3);
+  gPad->SetLogz();
+  ReconCounts2DC->DrawClone("colz");
   can->cd(4);
   gPad->SetLogz();
-  ReconCounts2D->DrawClone("colz");
+  ReconCounts2DF->DrawClone("colz");
 
   can->cd(5);
   gPad->SetLogz();
   TotalCounts2D->DrawClone("colz");
 
   can->cd(6);
-  efficiency3->Draw("colz");
-
-  d2.Snapshot("rms","RMS.root",{"EBin","TBin","PBin","EMin","TMin","PMin","Counts","RMS"});
-  
-  
-
-  ROOT::VecOps::RVec<double> thetaBins;
-  ROOT::VecOps::RVec<double> phiBins;
-  ROOT::VecOps::RVec<double> energyBins;
-  ROOT::VecOps::RVec<TString> energyFilters;
-  ROOT::VecOps::RVec<TString> thetaFilters;
-  ROOT::VecOps::RVec<TString> phiFilters;
+  efficiency3R->Draw("colz");
+  can->cd(7);
+  efficiency3C->Draw("colz");
+  can->cd(8);
+  efficiency3F->Draw("colz");
 
 //   for(int i=0; i<eBins; i++){
 //     energyBins.push_back(eMin+(energySize*(i+0.5)));
