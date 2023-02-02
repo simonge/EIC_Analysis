@@ -57,6 +57,7 @@ private:
 void PhiEffWindowSize(){
   //ROOT::EnableImplicitMT();
 
+  TString outNamepng0  = "plots/PSizeEfficiencies-"+tag+"00.png";
   TString outNamepng  = "plots/PSizeEfficiencies-"+tag+".png";
   TString outNamepng2  = "plots/BremEfficiencies-"+tag+".png";
 
@@ -234,7 +235,7 @@ void PhiEffWindowSize(){
     .Define("BCountsRMS6",GetCounts2(BremPhi4D6.GetPtr()),{"EBin","TBin","PBin"})
     .Define("BCounts6","BCountsRMS6.counts")
     .Define("BRMS6","BCountsRMS6.rms")
-    .Define("Ratio","RCounts/(RCounts+BCounts)")
+    .Define("Ratio", "RCounts/(RCounts+BCounts*11.65)")
     .Define("Ratio1","RCounts1/(RCounts1+BCounts1*11.65)")
     .Define("Ratio2","RCounts2/(RCounts2+BCounts2*11.65)")
     .Define("Ratio3","RCounts3/(RCounts3+BCounts3*11.65)")
@@ -253,32 +254,49 @@ void PhiEffWindowSize(){
 //   auto ReconCounts5 = d2.Filter(countFilter+"&&RMS5<20").Histo1D({"PhiReconEnergyCounts5", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
 //   auto ReconCounts6 = d2.Filter(countFilter+"&&RMS6<20").Histo1D({"PhiReconEnergyCounts6", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
 
-  auto TotalCounts  = d2.Histo1D({"TotalEnergyCountsR", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
-  auto ReconCounts  = d2.Filter("Counts>10&&RMS<30").Histo1D({"PhiReconEnergyCounts", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
-  auto ReconCounts1 = d2.Filter("Counts1>10&&RMS1<30").Histo1D({"PhiReconEnergyCounts1", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts1");
-  auto ReconCounts2 = d2.Filter("Counts2>10&&RMS2<30").Histo1D({"PhiReconEnergyCounts2", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts2");
-  auto ReconCounts3 = d2.Filter("Counts3>10&&RMS3<30").Histo1D({"PhiReconEnergyCounts3", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts3");
-  auto ReconCounts4 = d2.Filter("Counts4>10&&RMS4<30").Histo1D({"PhiReconEnergyCounts4", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts4");
-  auto ReconCounts5 = d2.Filter("Counts5>10&&RMS5<30").Histo1D({"PhiReconEnergyCounts5", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts5");
-  auto ReconCounts6 = d2.Filter("Counts6>10&&RMS6<30").Histo1D({"PhiReconEnergyCounts6", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","Counts6");
+  auto TotalCounts  = d2.Histo1D({"TotalEnergyCountsR", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
+  auto ReconCounts  = d2.Filter("Counts>10&&RMS<30").Histo1D({"PhiReconEnergyCounts", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts");
+  auto ReconCounts1 = d2.Filter("Counts1>10&&RMS1<30").Histo1D({"PhiReconEnergyCounts1", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts1");
+  auto ReconCounts2 = d2.Filter("Counts2>10&&RMS2<30").Histo1D({"PhiReconEnergyCounts2", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts2");
+  auto ReconCounts3 = d2.Filter("Counts3>10&&RMS3<30").Histo1D({"PhiReconEnergyCounts3", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts3");
+  auto ReconCounts4 = d2.Filter("Counts4>10&&RMS4<30").Histo1D({"PhiReconEnergyCounts4", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts4");
+  auto ReconCounts5 = d2.Filter("Counts5>10&&RMS5<30").Histo1D({"PhiReconEnergyCounts5", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts5");
+  auto ReconCounts6 = d2.Filter("Counts6>10&&RMS6<30").Histo1D({"PhiReconEnergyCounts6", ";Energy [GeV]", eBins, eMin, eMax },"EMin","Counts6");
 
-  auto RCounts      = d2.Histo1D({"TotalEnergyCountsR", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts");
-  auto RReconCounts = d2.Filter("Counts>10&&RMS<30")  .Histo1D({"PhiReconEnergyCounts",  ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts" );
-  auto RCounts1     = d2.Filter("Counts1>10&&RMS1<30").Histo1D({"PhiReconEnergyCounts1", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts1");
-  auto RCounts2     = d2.Filter("Counts2>10&&RMS2<30").Histo1D({"PhiReconEnergyCounts2", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts2");
-  auto RCounts3     = d2.Filter("Counts3>10&&RMS3<30").Histo1D({"PhiReconEnergyCounts3", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts3");
-  auto RCounts4     = d2.Filter("Counts4>10&&RMS4<30").Histo1D({"PhiReconEnergyCounts4", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts4");
-  auto RCounts5     = d2.Filter("Counts5>10&&RMS5<30").Histo1D({"PhiReconEnergyCounts5", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts5");
-  auto RCounts6     = d2.Filter("Counts6>10&&RMS6<30").Histo1D({"PhiReconEnergyCounts6", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts6");
+  auto RCounts      = d2.Histo1D({"TotalEnergyCountsR", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts");
+  auto RReconCounts = d2.Filter("Counts>10&&RMS<30")  .Histo1D({"PhiReconEnergyCounts",  ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts" );
+  auto RCounts1     = d2.Filter("Counts1>10&&RMS1<30").Histo1D({"PhiReconEnergyCounts1", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts1");
+  auto RCounts2     = d2.Filter("Counts2>10&&RMS2<30").Histo1D({"PhiReconEnergyCounts2", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts2");
+  auto RCounts3     = d2.Filter("Counts3>10&&RMS3<30").Histo1D({"PhiReconEnergyCounts3", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts3");
+  auto RCounts4     = d2.Filter("Counts4>10&&RMS4<30").Histo1D({"PhiReconEnergyCounts4", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts4");
+  auto RCounts5     = d2.Filter("Counts5>10&&RMS5<30").Histo1D({"PhiReconEnergyCounts5", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts5");
+  auto RCounts6     = d2.Filter("Counts6>10&&RMS6<30").Histo1D({"PhiReconEnergyCounts6", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts6");
 
-  auto BCounts      = d2.Histo1D({"TotalEnergyCountsR", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts");
-  auto BReconCounts = d2.Filter("Counts>10&&RMS<30")  .Histo1D({"PhiReconEnergyCounts",  ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts" );
-  auto BCounts1     = d2.Filter("Counts1>10&&RMS1<30").Histo1D({"PhiReconEnergyCounts1", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts1");
-  auto BCounts2     = d2.Filter("Counts2>10&&RMS2<30").Histo1D({"PhiReconEnergyCounts2", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts2");
-  auto BCounts3     = d2.Filter("Counts3>10&&RMS3<30").Histo1D({"PhiReconEnergyCounts3", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts3");
-  auto BCounts4     = d2.Filter("Counts4>10&&RMS4<30").Histo1D({"PhiReconEnergyCounts4", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts4");
-  auto BCounts5     = d2.Filter("Counts5>10&&RMS5<30").Histo1D({"PhiReconEnergyCounts5", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts5");
-  auto BCounts6     = d2.Filter("Counts6>10&&RMS6<30").Histo1D({"PhiReconEnergyCounts6", ";#Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts6");
+  auto BCounts      = d2.Histo1D({"TotalEnergyCountsR", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts");
+  auto BReconCounts = d2.Filter("Counts>10&&RMS<30")  .Histo1D({"PhiReconEnergyCounts",  ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts" );
+  auto BCounts1     = d2.Filter("Counts1>10&&RMS1<30").Histo1D({"PhiReconEnergyCounts1", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts1");
+  auto BCounts2     = d2.Filter("Counts2>10&&RMS2<30").Histo1D({"PhiReconEnergyCounts2", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts2");
+  auto BCounts3     = d2.Filter("Counts3>10&&RMS3<30").Histo1D({"PhiReconEnergyCounts3", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts3");
+  auto BCounts4     = d2.Filter("Counts4>10&&RMS4<30").Histo1D({"PhiReconEnergyCounts4", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts4");
+  auto BCounts5     = d2.Filter("Counts5>10&&RMS5<30").Histo1D({"PhiReconEnergyCounts5", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts5");
+  auto BCounts6     = d2.Filter("Counts6>10&&RMS6<30").Histo1D({"PhiReconEnergyCounts6", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts6");
+
+  auto R2ReconCounts = d2.Filter("Counts>10&&RMS<30&&Ratio>0.5")  .Histo1D({"PhiReconEnergyCounts",  ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts" );
+  auto R2Counts1     = d2.Filter("Counts1>10&&RMS1<30&&Ratio>0.5").Histo1D({"PhiReconEnergyCounts1", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts1");
+  auto R2Counts2     = d2.Filter("Counts2>10&&RMS2<30&&Ratio>0.5").Histo1D({"PhiReconEnergyCounts2", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts2");
+  auto R2Counts3     = d2.Filter("Counts3>10&&RMS3<30&&Ratio>0.5").Histo1D({"PhiReconEnergyCounts3", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts3");
+  auto R2Counts4     = d2.Filter("Counts4>10&&RMS4<30&&Ratio>0.5").Histo1D({"PhiReconEnergyCounts4", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts4");
+  auto R2Counts5     = d2.Filter("Counts5>10&&RMS5<30&&Ratio>0.5").Histo1D({"PhiReconEnergyCounts5", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts5");
+  auto R2Counts6     = d2.Filter("Counts6>10&&RMS6<30&&Ratio>0.5").Histo1D({"PhiReconEnergyCounts6", ";Energy [GeV]", eBins, eMin, eMax },"EMin","RCounts6");
+
+//   auto B2Counts      = d2.Histo1D({"TotalEnergyCountsR", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts");
+//   auto B2ReconCounts = d2.Filter("Counts>10&&RMS<30&&Ratio>0.1")  .Histo1D({"PhiReconEnergyCounts",  ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts" );
+//   auto B2Counts1     = d2.Filter("Counts1>10&&RMS1<30&&Ratio>0.1").Histo1D({"PhiReconEnergyCounts1", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts1");
+//   auto B2Counts2     = d2.Filter("Counts2>10&&RMS2<30&&Ratio>0.1").Histo1D({"PhiReconEnergyCounts2", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts2");
+//   auto B2Counts3     = d2.Filter("Counts3>10&&RMS3<30&&Ratio>0.1").Histo1D({"PhiReconEnergyCounts3", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts3");
+//   auto B2Counts4     = d2.Filter("Counts4>10&&RMS4<30&&Ratio>0.1").Histo1D({"PhiReconEnergyCounts4", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts4");
+//   auto B2Counts5     = d2.Filter("Counts5>10&&RMS5<30&&Ratio>0.1").Histo1D({"PhiReconEnergyCounts5", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts5");
+//   auto B2Counts6     = d2.Filter("Counts6>10&&RMS6<30&&Ratio>0.1").Histo1D({"PhiReconEnergyCounts6", ";Energy [GeV]", eBins, eMin, eMax },"EMin","BCounts6");
 
 
   //Proper Efficiency
@@ -349,7 +367,7 @@ void PhiEffWindowSize(){
 
   TH1D* efficiency  = (TH1D*)ReconCounts->Clone("Efficiency");
   efficiency->Divide(ReconCounts.GetPtr(),TotalCounts.GetPtr());
-  efficiency->SetTitle("Efficiencies");
+  efficiency->SetTitle("Phi Reconstruction Efficiency");
   TH1D* efficiency1 = (TH1D*)ReconCounts1->Clone("Efficiency1");
   efficiency1->Divide(ReconCounts1.GetPtr(),TotalCounts.GetPtr());
   efficiency1->SetTitle("Efficiencies1");
@@ -389,16 +407,26 @@ void PhiEffWindowSize(){
   efficiency5->Draw("same hist");
   efficiency6->SetLineColor(kGray);
   efficiency6->Draw("same hist");
-  
-  auto legend = new TLegend(0.1,0.7,0.48,0.9);
-  legend->AddEntry(efficiency,"simulated","l");
-  legend->AddEntry(efficiency1,"1Timepix4","l");
-  legend->AddEntry(efficiency2,"2Timepix4","l");
-  legend->AddEntry(efficiency3,"3Timepix4","l");
-  legend->AddEntry(efficiency4,"4Timepix4","l");
-  legend->AddEntry(efficiency5,"5Timepix4","l");
-  legend->AddEntry(efficiency6,"6Timepix4","l");
+    
+  auto legend = new TLegend(0.2,0.6,0.45,0.88);
+  legend->AddEntry(efficiency,"Simulation Accepted","l");
+  legend->AddEntry(efficiency6,"16.9 cm height","l");
+  legend->AddEntry(efficiency5,"14.1 cm height","l");
+  legend->AddEntry(efficiency4,"11.3 cm height","l");
+  legend->AddEntry(efficiency3,"8.4 cm height","l");
+  legend->AddEntry(efficiency2,"5.6 cm height","l");
+  legend->AddEntry(efficiency1,"2.8 cm height","l");
   legend->Draw();
+
+//   auto legend = new TLegend(0.1,0.7,0.48,0.9);
+//   legend->AddEntry(efficiency,"simulated","l");
+//   legend->AddEntry(efficiency1,"1Timepix4","l");
+//   legend->AddEntry(efficiency2,"2Timepix4","l");
+//   legend->AddEntry(efficiency3,"3Timepix4","l");
+//   legend->AddEntry(efficiency4,"4Timepix4","l");
+//   legend->AddEntry(efficiency5,"5Timepix4","l");
+//   legend->AddEntry(efficiency6,"6Timepix4","l");
+//   legend->Draw();
 
   TH1D* fracEff1 = (TH1D*)efficiency1->Clone("FracEff1");
   fracEff1->Divide(fracEff1,efficiency);
@@ -449,6 +477,27 @@ void PhiEffWindowSize(){
   eff2.DrawClone("AP");
  
   can->SaveAs(outNamepng);
+
+
+  TCanvas* can0 = new TCanvas("can0","can0",1000,1000);
+  
+  efficiency->SetMinimum(0);
+  efficiency->SetMaximum(1);
+  efficiency->Draw("hist");
+//   efficiency1->SetLineColor(kRed);
+//   efficiency1->Draw("same hist");
+//   efficiency2->SetLineColor(kBlue);
+//   efficiency2->Draw("same hist");
+//   efficiency3->SetLineColor(kGreen);
+//   efficiency3->Draw("same hist");
+//   efficiency4->SetLineColor(kYellow);
+//   efficiency4->Draw("same hist");
+//   efficiency5->SetLineColor(kOrange);
+//   efficiency5->Draw("same hist");
+//   efficiency6->SetLineColor(kGray);
+//   efficiency6->Draw("same hist");
+//   legend->Draw();
+  can0->SaveAs(outNamepng0);
 
   TCanvas* can2 = new TCanvas("can2","can2",2200,1000);
   can2->Divide(4,1);
@@ -512,7 +561,7 @@ void PhiEffWindowSize(){
   bremRatio6->SetLineColor(kGray);
   bremRatio6->Draw("same hist");
   
-  auto legend2 = new TLegend(0.1,0.7,0.48,0.9);
+  auto legend2 = new TLegend(0.1,0.6,0.48,0.9);
   legend2->AddEntry(bremReconRatio,"simulated","l");
   legend2->AddEntry(bremRatio1,"1Timepix4","l");
   legend2->AddEntry(bremRatio2,"2Timepix4","l");
@@ -522,6 +571,8 @@ void PhiEffWindowSize(){
   legend2->AddEntry(bremRatio6,"6Timepix4","l");
   legend2->Draw();
 
+
+  //Other stuff
   TH1D* BfracEff1 = (TH1D*)bremRatio1->Clone("BfracEff1");
   BfracEff1->Divide(bremRatio1,bremReconRatio);
   TH1D* BfracEff2 = (TH1D*)bremRatio2->Clone("BfracEff2");
@@ -551,33 +602,107 @@ void PhiEffWindowSize(){
   BfracEff6->Draw("same hist");
 
   can2->cd(3);
-  auto ratio2D  = d2.Filter("Counts>10&&RMS<30") .Histo2D({"BremRatio",   ";#Ratio [GeV]", 100, 0, 1, eBins, eMin, eMax },"Ratio","EMin" );
-  auto ratio  = d2.Filter("Counts>10&&RMS<30") .Histo1D({"BremRatio",   ";#Ratio [GeV]", 40, 0, 1 },"Ratio" );
-  auto ratio1 = d2.Filter("Counts1>10&&RMS<30") .Histo1D({"BremRatio1",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio1" );
-  auto ratio2 = d2.Filter("Counts2>10&&RMS<30") .Histo1D({"BremRatio2",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio2" );
-  auto ratio3 = d2.Filter("Counts3>10&&RMS<30") .Histo1D({"BremRatio3",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio3" );
-  auto ratio4 = d2.Filter("Counts4>10&&RMS<30") .Histo1D({"BremRatio4",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio4" );
-  auto ratio5 = d2.Filter("Counts5>10&&RMS<30") .Histo1D({"BremRatio5",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio5" );
-  auto ratio6 = d2.Filter("Counts6>10&&RMS<30") .Histo1D({"BremRatio6",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio6" );
+
+  TH1D* brem2Ratio  = (TH1D*)ReconCounts->Clone("TotalRatio");
+  brem2Ratio->Divide(R2ReconCounts.GetPtr(),RReconCounts.GetPtr());
+  brem2Ratio->SetTitle("TotalRatio");
+  TH1D* brem2Ratio1  = (TH1D*)ReconCounts->Clone("Ratio1");
+  brem2Ratio1->Divide(R2Counts1.GetPtr(),RCounts1.GetPtr());
+  brem2Ratio1->SetTitle("Ratio1");
+  TH1D* brem2Ratio2  = (TH1D*)ReconCounts->Clone("Ratio2");
+  brem2Ratio2->Divide(R2Counts2.GetPtr(),RCounts2.GetPtr());
+  brem2Ratio2->SetTitle("Ratio2");
+  TH1D* brem2Ratio3  = (TH1D*)ReconCounts->Clone("Ratio3");
+  brem2Ratio3->Divide(R2Counts3.GetPtr(),RCounts3.GetPtr());
+  brem2Ratio3->SetTitle("Ratio3");
+  TH1D* brem2Ratio4  = (TH1D*)ReconCounts->Clone("Ratio4");
+  brem2Ratio4->Divide(R2Counts4.GetPtr(),RCounts4.GetPtr());
+  brem2Ratio4->SetTitle("Ratio4");
+  TH1D* brem2Ratio5  = (TH1D*)ReconCounts->Clone("Ratio5");
+  brem2Ratio5->Divide(R2Counts5.GetPtr(),RCounts5.GetPtr());
+  brem2Ratio5->SetTitle("Ratio5");
+  TH1D* brem2Ratio6  = (TH1D*)ReconCounts->Clone("Ratio6");
+  brem2Ratio6->Divide(R2Counts6.GetPtr(),RCounts6.GetPtr());
+  brem2Ratio6->SetTitle("Ratio6");
+
+  brem2Ratio->SetMinimum(0);
+  brem2Ratio->SetMaximum(1);
+  brem2Ratio->Draw("hist");
+  brem2Ratio1->SetLineColor(kRed);
+  brem2Ratio1->Draw("same hist");
+  brem2Ratio2->SetLineColor(kBlue);
+  brem2Ratio2->Draw("same hist");
+  brem2Ratio3->SetLineColor(kGreen);
+  brem2Ratio3->Draw("same hist");
+  brem2Ratio4->SetLineColor(kYellow);
+  brem2Ratio4->Draw("same hist");
+  brem2Ratio5->SetLineColor(kOrange);
+  brem2Ratio5->Draw("same hist");
+  brem2Ratio6->SetLineColor(kGray);
+  brem2Ratio6->Draw("same hist");
 
 
-  ratio->DrawClone("colz");
+  //Other stuff
+  TH1D* B2fracEff1 = (TH1D*)brem2Ratio1->Clone("B2fracEff1");
+  B2fracEff1->Divide(brem2Ratio1,brem2Ratio);
+  TH1D* B2fracEff2 = (TH1D*)bremRatio2->Clone("B2fracEff2");
+  B2fracEff2->Divide(brem2Ratio2,brem2Ratio);
+  TH1D* B2fracEff3 = (TH1D*)bremRatio3->Clone("B2fracEff3");
+  B2fracEff3->Divide(brem2Ratio3,brem2Ratio);
+  TH1D* B2fracEff4 = (TH1D*)bremRatio4->Clone("B2fracEff4");
+  B2fracEff4->Divide(brem2Ratio4,brem2Ratio);
+  TH1D* B2fracEff5 = (TH1D*)bremRatio5->Clone("B2fracEff5");
+  B2fracEff5->Divide(brem2Ratio5,brem2Ratio);
+  TH1D* B2fracEff6 = (TH1D*)bremRatio6->Clone("B2fracEff6");
+  B2fracEff6->Divide(brem2Ratio6,brem2Ratio);
 
   can2->cd(4);
 
-  ratio->DrawClone("hist");
-  ratio1->SetLineColor(kRed);
-  ratio1->DrawClone("same hist");
-  ratio2->SetLineColor(kBlue);
-  ratio2->DrawClone("same hist");
-  ratio3->SetLineColor(kGreen);
-  ratio3->DrawClone("same hist");
-  ratio4->SetLineColor(kYellow);
-  ratio4->DrawClone("same hist");
-  ratio5->SetLineColor(kOrange);
-  ratio5->DrawClone("same hist");
-  ratio6->SetLineColor(kGray);
-  ratio6->DrawClone("same hist");
+  B2fracEff1->SetMinimum(0);
+  B2fracEff1->SetMaximum(1);
+  B2fracEff1->SetLineColor(kRed);
+  B2fracEff1->Draw("hist");
+  B2fracEff2->SetLineColor(kBlue);
+  B2fracEff2->Draw("same hist");
+  B2fracEff3->SetLineColor(kGreen);
+  B2fracEff3->Draw("same hist");
+  B2fracEff4->SetLineColor(kYellow);
+  B2fracEff4->Draw("same hist");
+  B2fracEff5->SetLineColor(kOrange);
+  B2fracEff5->Draw("same hist");
+  B2fracEff6->SetLineColor(kGray);
+  B2fracEff6->Draw("same hist");
+
+  
+
+//   can2->cd(3);
+//   auto ratio2D  = d2.Filter("Counts>10&&RMS<30") .Histo2D({"BremRatio",   ";#Ratio [GeV]", 100, 0, 1, eBins, eMin, eMax },"Ratio","EMin" );
+//   auto ratio  = d2.Filter("Counts>10&&RMS<30") .Histo1D({"BremRatio",   ";#Ratio [GeV]", 40, 0, 1 },"Ratio" );
+//   auto ratio1 = d2.Filter("Counts1>10&&RMS1<30") .Histo1D({"BremRatio1",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio1" );
+//   auto ratio2 = d2.Filter("Counts2>10&&RMS2<30") .Histo1D({"BremRatio2",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio2" );
+//   auto ratio3 = d2.Filter("Counts3>10&&RMS3<30") .Histo1D({"BremRatio3",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio3" );
+//   auto ratio4 = d2.Filter("Counts4>10&&RMS4<30") .Histo1D({"BremRatio4",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio4" );
+//   auto ratio5 = d2.Filter("Counts5>10&&RMS5<30") .Histo1D({"BremRatio5",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio5" );
+//   auto ratio6 = d2.Filter("Counts6>10&&RMS6<30") .Histo1D({"BremRatio6",  ";#Ratio [GeV]", 40, 0, 1 },"Ratio6" );
+
+
+//   ratio2D->DrawClone("colz");
+
+//   can2->cd(4);
+
+//   ratio->DrawClone("hist");
+//   ratio1->SetLineColor(kRed);
+//   ratio1->DrawClone("same hist");
+//   ratio2->SetLineColor(kBlue);
+//   ratio2->DrawClone("same hist");
+//   ratio3->SetLineColor(kGreen);
+//   ratio3->DrawClone("same hist");
+//   ratio4->SetLineColor(kYellow);
+//   ratio4->DrawClone("same hist");
+//   ratio5->SetLineColor(kOrange);
+//   ratio5->DrawClone("same hist");
+//   ratio6->SetLineColor(kGray);
+//   ratio6->DrawClone("same hist");
   
 
   can2->SaveAs(outNamepng2);

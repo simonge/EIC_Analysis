@@ -10,16 +10,17 @@ using namespace std;
 
 std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 
-//std::vector<TString> fileNames = {"/scratch/EIC/Analysis/tempClusterQR.root"};
-std::vector<TString> fileNames = {"/scratch/EIC/Analysis/clusterFrontWindow.root"};
+std::vector<TString> fileNames = {"/scratch/EIC/Analysis/tempClusterQR.root"};
+//std::vector<TString> fileNames = {"/scratch/EIC/Analysis/clusterFrontWindow.root"};
 
 //std::vector<TString> fileNames = {"/scratch/EIC/Analysis/clusterLarge.root"};
 
 void EfficiencySizeVariation(){
 
-  TString outNamepng   = "plots/EfficiencySizeVariationFrontWindow.png";
-  //  TString outNamepng   = "plots/EfficiencySizeVariation.png";
-  TString outNamepng2   = "plots/EfficiencySizeVariation2.png";
+  //TString outNamepng   = "plots/EfficiencySizeVariationFrontWindow.png";
+  TString outNamepng   = "plots/EfficiencySizeVariation.png";
+  //  TString outNamepng2   = "plots/EfficiencySizeVariation2.png";
+  TString outNamepng3   = "plots/EfficiencySizeVariation30.png";
 
   gStyle->SetStatW(0.3);
   gStyle->SetStatColor(0);
@@ -79,49 +80,50 @@ void EfficiencySizeVariation(){
   int Chip6Counts = Chip6->GetEntries();
   
   TH1D* forw = (TH1D*)generated->Clone("For");
-  forw->Divide(forward.GetPtr(),forward.GetPtr());
+  forw->Divide(forward.GetPtr(),generated.GetPtr());
   forw->SetMinimum(0);
   forw->SetMaximum(1);
+  forw->SetTitle("Energy Dependent Efficiency");
   forw->Draw("hist");
   TH1D* acc = (TH1D*)generated->Clone("Acc");
-  acc->Divide(accepted.GetPtr(),forward.GetPtr());
-  acc->SetLineColor(kBlack);
+  acc->Divide(accepted.GetPtr(),generated.GetPtr());
+  acc->SetLineColor(kViolet);
   acc->Draw("hist same");
   TH1D* C1 = (TH1D*)generated->Clone("Acc");
-  C1->Divide(Chip1.GetPtr(),forward.GetPtr());
+  C1->Divide(Chip1.GetPtr(),generated.GetPtr());
   C1->SetLineColor(kRed);
   C1->Draw("hist same");;
   TH1D* C2 = (TH1D*)generated->Clone("Acc");
-  C2->Divide(Chip2.GetPtr(),forward.GetPtr());
+  C2->Divide(Chip2.GetPtr(),generated.GetPtr());
   C2->SetLineColor(kBlue);
   C2->Draw("hist same");;
   TH1D* C3 = (TH1D*)generated->Clone("Acc");
-  C3->Divide(Chip3.GetPtr(),forward.GetPtr());
+  C3->Divide(Chip3.GetPtr(),generated.GetPtr());
   C3->SetLineColor(kGreen);
   C3->Draw("hist same");;
   TH1D* C4 = (TH1D*)generated->Clone("Acc");
-  C4->Divide(Chip4.GetPtr(),forward.GetPtr());
+  C4->Divide(Chip4.GetPtr(),generated.GetPtr());
   C4->SetLineColor(kYellow);
   C4->Draw("hist same");;
   TH1D* C5 = (TH1D*)generated->Clone("Acc");
-  C5->Divide(Chip5.GetPtr(),forward.GetPtr());
+  C5->Divide(Chip5.GetPtr(),generated.GetPtr());
   C5->SetLineColor(kOrange);
   C5->Draw("hist same");;
   TH1D* C6 = (TH1D*)generated->Clone("Acc");
-  C6->Divide(Chip6.GetPtr(),forward.GetPtr());
+  C6->Divide(Chip6.GetPtr(),generated.GetPtr());
   C6->SetLineColor(kGray);
   C6->Draw("hist same");
   
   
-  auto legend = new TLegend(0.2,0.7,0.35,0.95);
-  legend->AddEntry(forw,"forward","l");
-  legend->AddEntry(acc,"accepted","l");
-  legend->AddEntry(C1,"1Timepix4","l");
-  legend->AddEntry(C2,"2Timepix4","l");
-  legend->AddEntry(C3,"3Timepix4","l");
-  legend->AddEntry(C4,"4Timepix4","l");
-  legend->AddEntry(C5,"5Timepix4","l");
-  legend->AddEntry(C6,"6Timepix4","l");
+  auto legend = new TLegend(0.2,0.8,0.45,0.88);
+  legend->AddEntry(forw,"Forward (theta<10 mrad)","l");
+  legend->AddEntry(acc,"Simulation Accepted","l");
+//   legend->AddEntry(C6,"16.9 cm height","l");
+//   legend->AddEntry(C5,"14.1 cm height","l");
+//   legend->AddEntry(C4,"11.3 cm height","l");
+//   legend->AddEntry(C3,"8.4 cm height","l");
+//   legend->AddEntry(C2,"5.6 cm height","l");
+//   legend->AddEntry(C1,"2.8 cm height","l");
   legend->Draw();
   
   TH1D* fracEff1 = (TH1D*)C1->Clone("FracEff1");
@@ -161,8 +163,25 @@ void EfficiencySizeVariation(){
   eff.SetMinimum(0);
   eff.SetMarkerStyle(2);
   eff.DrawClone("AP");    
+
+
   
-  can->SaveAs(outNamepng2);
+  can->SaveAs(outNamepng);
+
+
+  TCanvas* can2 = new TCanvas("can2","can2",1400,1400);
+  forw->Draw("hist");
+  acc->Draw("hist same");
+//   C1->Draw("hist same");
+//   C2->Draw("hist same");
+//   C3->Draw("hist same");
+//   C4->Draw("hist same");
+//   C5->Draw("hist same"); 
+//   C6->Draw("hist same");
+  legend->Draw();
+  
+  can2->SaveAs(outNamepng3);
+  
 
 
 }

@@ -13,7 +13,7 @@ std::vector<double> pixSize = {0,55,110,220,440,880,1760};
 std::vector<TString> fileNames = {"/scratch/EIC/Analysis/temp.root"};
 
 
-void Inputs(){
+void NNInputs(){
 
   TString outNamepng   = "plots/InputPos.png";
 
