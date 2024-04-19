@@ -22,7 +22,7 @@ auto getPhi = [](ROOT::VecOps::RVec<T> momenta) {
 };
 
 // Define the function to perform the efficiency analysis
-void EfficiencyAnalysisRDF(TString infile="pythia8NCDIS_18x275_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_5.0002.eicrecon.tree.edm4eic.root"){
+void EfficiencyAnalysisRDF(TString infile="pythia8NCDIS_18x275_minQ2=10_beamEffects_xAngle=-0.025_hiDiv_5.0001.eicrecon.tree.edm4eic.root"){
    
   // Set up input file 
   ROOT::RDataFrame df("events", infile);
@@ -33,9 +33,9 @@ void EfficiencyAnalysisRDF(TString infile="pythia8NCDIS_18x275_minQ2=10_beamEffe
                 .Define("pdgFilter",     "absPDG == 11 || absPDG == 13 || absPDG == 211 || absPDG == 321 || absPDG == 2212")
                 .Define("particleFilter","statusFilter && pdgFilter"           )
                 .Define("filtMCParts",   "MCParticles[particleFilter]"         )
-                .Define("assoFilter",    "Take(particleFilter,_ReconstructedChargedParticleAssociations_sim.index)") // Incase any of the associated particles happen to not be charged
-                .Define("assoMCParts",   "Take(MCParticles,_ReconstructedChargedParticleAssociations_sim.index)[assoFilter]")
-                .Define("assoRecParts",  "Take(ReconstructedChargedParticles,_ReconstructedChargedParticleAssociations_rec.index)[assoFilter]")
+                .Define("assoFilter",    "Take(particleFilter,ReconstructedChargedParticleAssociations.simID)") // Incase any of the associated particles happen to not be charged
+                .Define("assoMCParts",   "Take(MCParticles,ReconstructedChargedParticleAssociations.simID)[assoFilter]")
+                .Define("assoRecParts",  "Take(ReconstructedChargedParticles,ReconstructedChargedParticleAssociations.recID)[assoFilter]")
                 .Define("filtMCEta",     getEta<MCP>   , {"filtMCParts"} )
                 .Define("filtMCPhi",     getPhi<MCP>   , {"filtMCParts"} )
                 .Define("accoMCEta",     getEta<MCP>   , {"assoMCParts"} )
